@@ -1,15 +1,4 @@
-list
-asd
-use linux.users
-
-use tmp
-info
-
-show options
-
-show missing
-
-
-back
+use l.e.k
+run
 quit
 

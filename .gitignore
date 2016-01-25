@@ -60,3 +60,10 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Vim .swp files
+source/*/.*.swp
+.*.swp
+
+# input file
+input
