@@ -12,7 +12,7 @@ class Module(GenericModule):
 		self.name = 'linux.enumeration.distribution'
 		self.short_description = 'Extracts information about current distro.'
 		self.references = [
-			'http://man7.org/linux/man-pages/man5/passwd.5.html',
+			'https://blog.g0tmi1k.com/2011/08/basic-linux-privilege-escalation/'
 		]
 		
 		self.date = '2016-01-25'
@@ -38,10 +38,10 @@ class Module(GenericModule):
 
 	def ResetParameters(self):
 		self.parameters = {
-			#'FILE': Parameter(value='/etc/passwd', mandatory=True, description='File to parse'),
 		}
 
 	def Check(self):
+		self.kb_init()
 		log.info('This module does not support check.')
 	
 	def Run(self):
@@ -49,17 +49,15 @@ class Module(GenericModule):
 
 		# # # # # # # #
 		struct = kb['DISTRIBUTION']
+		
 		if os.path.isdir('/etc'):
 			if os.path.exists('/etc/issue'):
+				# get /etc/issue
 				with open('/etc/issue', 'r') as f:
 					self.kb_save(struct, 'ISSUE', f.read(), '/etc/issue:')
-			#		content = f.read()
-			#	if content is not None and len(content)>0:
-			#		log.ok('/etc/issue:')
-			#		log.writeline(content)
-			#		kb['DISTRIBUTION']['ISSUE'] = content
 			else:
 				log.err('/etc/issue does not exist.')
+			# get /etc/*-release
 			release_files = [x for x in os.listdir('/etc/') if re.match('.*-release$', x)]
 			for x in release_files:
 				with open('/etc/' + x, 'r') as f:
