@@ -6,45 +6,61 @@ from _generic_plugin import *
 class Module(GenericModule):
 	def __init__(self):
 		self.authors = [
-			Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='badsulog.blogspot.com'),
+			# Define all authors of this module here. Email and Web is optional.
+			Author(name='', email='', web=''),
 		]
 		
+		# Name must be unique and should be in dot notation (e.g. linux.enumeration.distribution).
+		# For clarity, the file name should be the same, with dots replaced by underscores (_) and .py extension.
 		self.name = 'template'
+		# Use this field as a SHORT description. This will be shown when modules are listed.
 		self.short_description = 'Serves as a module template.'
+		# Here you can specify links to books, blogs, whitepapers, CVEs etc.
 		self.references = [
 			'',
 		]
-		
+		# Specify the date in exactly this format (yyyy-mm-dd). This can be used for searching or sorting.
 		self.date = '2016-01-25'
+		# You can define the license of the module here.
 		self.license = 'GNU GPLv2'
+		# If any change is made after the publishing, you must change the version.
 		self.version = '1.0'
+		# Tags are useful for searching.
 		self.tags = [
 			'template',
 		]
-		
-		self.description = 'This module is designed to be used as a template for new modules. For help, please check template_commented module.'
+		# This is long description. You can (should) write anything important and useful here.  You should define what the module does, what files it access and whether it can do harm.
+		self.description = 'This module is designed to be used as a template for new modules. Tired of the comments? Check the "template" module.'
+		# If structures in knowledge base will be accessed, you should specify them here. Modules can be searched based on these fields.
 		self.kb_access = [
-			#DISTRIBUTION,
-			#USERS,
+			#'USERS',
 		]
+		
+		# If other modules are run directly from this module, you must specify the name and version. Dependencies will be checked for existence prior to execution.
 		self.dependencies = {
-			#linux.enumeration.distribution,
+			#'linux.enumeration.distribution': '1.0',
 		}
+		# If you like to redefine the modules frequently, consider to write some changelog.
 		self.changelog = ''
-		self.ResetParameters()
+
+		self.ResetParameters() # do not touch this
 
 	def ResetParameters(self):
+		# Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used.
 		self.parameters = {
 			#'FILE': Parameter(value='/etc/passwd', mandatory=True, description='File to parse'),
 		}
 
 	def Check(self):
+		self.kb_init() # do not touch this
+		# If the module can be checked for success without execution (like some exploits), you should do it here. Do not use any dependencies.
 		log.info('This module does not support check.')
 	
 	def Run(self):
-		self.kb_init()
+		self.kb_init() # do not touch this
 
 		# # # # # # # #
+		# Define your code here
 		log.ok('Template module says: "Hello World!"')
 		# # # # # # # #
 		pass

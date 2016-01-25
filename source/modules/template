@@ -6,11 +6,11 @@ from _generic_plugin import *
 class Module(GenericModule):
 	def __init__(self):
 		self.authors = [
-			Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='badsulog.blogspot.com'),
+			Author(name='', email='', web=''),
 		]
 		
-		self.name = 'template'
-		self.short_description = 'Serves as a module template.'
+		self.name = ''
+		self.short_description = ''
 		self.references = [
 			'',
 		]
@@ -19,33 +19,35 @@ class Module(GenericModule):
 		self.license = 'GNU GPLv2'
 		self.version = '1.0'
 		self.tags = [
-			'template',
+			'',
+		]
+		self.description = 'This module is designed to be used as a template for new modules. For help with this madness, check the "template_commented" module.'
+		self.kb_access = [
+			'',
 		]
 		
-		self.description = 'This module is designed to be used as a template for new modules. For help, please check template_commented module.'
-		self.kb_access = [
-			#DISTRIBUTION,
-			#USERS,
-		]
 		self.dependencies = {
-			#linux.enumeration.distribution,
+			'': '',
 		}
 		self.changelog = ''
+
 		self.ResetParameters()
 
 	def ResetParameters(self):
 		self.parameters = {
-			#'FILE': Parameter(value='/etc/passwd', mandatory=True, description='File to parse'),
+			'': Parameter(value='', mandatory=True, description=''),
 		}
 
 	def Check(self):
+		self.kb_init()
 		log.info('This module does not support check.')
 	
 	def Run(self):
 		self.kb_init()
 
 		# # # # # # # #
-		log.ok('Template module says: "Hello World!"')
+		# Define your code here
+		
 		# # # # # # # #
 		pass
 	
