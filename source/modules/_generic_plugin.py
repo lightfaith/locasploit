@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from source.lib.include import *
-import source.lib.parameters
+from source.lib.parameters import *
 from source.lib.author import *
 
 kb = lib.kb
