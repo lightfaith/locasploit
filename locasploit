@@ -26,8 +26,10 @@ args = parser.parse_args()
 #	log.info('%d modules loaded.' % (len(lib.modules)))
 
 def main():
+	if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
+		log.ok('Already running as %s.' % (lib.global_parameters['ROOT']))
+	
 	# input from file?
-
 	if args.input_file is not None:
 		with open(args.input_file[0], 'r') as f:
 			commands = f.read().splitlines()
