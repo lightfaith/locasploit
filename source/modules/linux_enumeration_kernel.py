@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#from source.lib.include import *
-#from source.lib.parameters import *
 from _generic_plugin import *
 
 class Module(GenericModule):

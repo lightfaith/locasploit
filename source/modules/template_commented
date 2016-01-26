@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-#from source.lib.include import *
-#from source.lib.parameters import *
 from _generic_plugin import *
+
+# File should be named according to its name (it is not mandatory, but it is good for clarity).
 
 class Module(GenericModule):
 	def __init__(self):
@@ -11,7 +11,8 @@ class Module(GenericModule):
 		]
 		
 		# Name must be unique and should be in dot notation (e.g. linux.enumeration.distribution).
-		# For clarity, the file name should be the same, with dots replaced by underscores (_) and .py extension.
+		# For clarity, the file name should be the same, with dots replaced by underscores (_) and .py extension. 
+		# Do not use search symbols (brackets, ~, |, &)
 		self.name = 'template'
 		# Use this field as a SHORT description. This will be shown when modules are listed.
 		self.short_description = 'Serves as a module template.'
@@ -25,7 +26,7 @@ class Module(GenericModule):
 		self.license = 'GNU GPLv2'
 		# If any change is made after the publishing, you must change the version.
 		self.version = '1.0'
-		# Tags are useful for searching.
+		# Tags are useful for searching. Do not use search keywords and symbols (and, not, or, &, |, !, brackets)
 		self.tags = [
 			'template',
 		]
