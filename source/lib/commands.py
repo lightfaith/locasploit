@@ -8,11 +8,12 @@ def execute_command(command):
 	command = command.strip()
 	lib.command_history.append(command)
 
-	# exit 
+	# exit
 	if command in ['exit', 'exit()', 'quit', 'quit()', 'q']:
+		lib.scheduler.stop()
 		sys.exit(0)
 	
-	# help 
+	# help
 	elif command == 'help':
 		print_help()
 	
@@ -33,7 +34,7 @@ def execute_command(command):
 	# module search
 	elif command[:7] == 'search ':
 		if len(command[7:].split(' ')) == 1 and not re.search('[!|&\(\)]', command[7:]):
-			# simple search, group by categories 
+			# simple search, group by categories
 			if command[7] in ['>', '<', '='] and len(command[8:]) == 4 and command[8:].isdigit(): # date
 				year = int(command[8:])
 				by_year = []
@@ -47,7 +48,7 @@ def execute_command(command):
 			else: # not a year, an expression
 				modules = lib.modules
 				
-				by_module_tmp = SearchAbbr(command[7:], modules.keys()) + [x for x in modules if command[7:] in x]
+				by_module_tmp = SearchAbbr(command[7:].lower(), [x.lower() for x in modules.keys()]) + [x for x in modules if command[7:].lower() in x.lower()]
 				by_module = []
 				for x in by_module_tmp:
 					if x not in by_module:
@@ -57,38 +58,38 @@ def execute_command(command):
 					print_modules(by_module)
 					log.writeline('')
 		
-				by_tag = [x for x in modules if command[7:] in modules[x].tags]
+				by_tag = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].tags]]
 				if len(by_tag) > 0:
 					log.attachline(log.Color.purple('By tags:'))
 					print_modules(by_tag)
 					log.writeline('')
 		
 				
-				by_parameter = [x for x in modules if command[7:] in modules[x].parameters]
+				by_parameter = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].parameters]]
 				if len(by_parameter) > 0:
 					log.attachline(log.Color.purple('By parameters:'))
 					print_modules(by_parameter)
 					log.writeline('')
 			
-				by_author = [x for x in modules for authors in modules[x].authors if command[7:] in authors.name or command[7:] in authors.email or command[7:] in authors.web]
+				by_author = [x for x in modules for authors in modules[x].authors if command[7:].lower() in authors.name.lower() or command[7:].lower() in authors.email.lower() or command[7:].lower() in authors.web.lower()]
 				if len(by_author) > 0:
 					log.attachline(log.Color.purple('By authors:'))
 					print_modules(by_author)
 					log.writeline('')
 				
-				by_kb = [x for x in modules if command[7:] in modules[x].kb_access]
+				by_kb = [x for x in modules if command[7:].upper() in [y.upper() for y in modules[x].kb_access]]
 				if len(by_kb) > 0:
 					log.attachline(log.Color.purple('By Knowledge Base:'))
 					print_modules(by_kb)
 					log.writeline('')
 				
-				by_dependency = [x for x in modules if len(SearchAbbr(command[7:], modules[x].dependencies.keys())) > 0]
+				by_dependency = [x for x in modules if len(SearchAbbr(command[7:].lower(), [y.lower() for y in modules[x].dependencies.keys()])) > 0]
 				if len(by_dependency) > 0:
 					log.attachline(log.Color.purple('By dependencies:'))
 					print_modules(by_dependency)
 					log.writeline('')
 
-				by_version = [x for x in modules if command[7:] == modules[x].version]
+				by_version = [x for x in modules if command[7:].lower() == modules[x].version.lower()]
 				if len(by_version) > 0:
 					log.attachline(log.Color.purple('By version:'))
 					print_modules(by_version)
@@ -183,11 +184,53 @@ def execute_command(command):
 		elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
 				log.warn('Some parameters are undefined.')
 		else:
-			log.info('Module %s has started.' % (m.name))
-			start = time.time()
-			m.Run()
-			end = time.time()
-			log.info('Module %s has terminated (%s).' % (m.name, show_time(end-start)))
+			kb_dep_ok = True
+			for p in m.parameters:
+				if m.parameters[p].kb:
+					parts = m.parameters[p].value.split('.')
+					if len(parts) == 1 and parts[0] not in lib.kb.keys():
+						kb_dep_ok = False
+						log.err('Key %s is not present in the Knowledge Base.' % parts[0])
+					elif len(parts) == 2 and parts[1] not in lib.kb.subkeys(parts[0]):
+						kb_dep_ok = False
+						log.err('Key %s.%s is not present in the Knowledge Base.' % parts[0], parts[1])
+
+				if m.parameters[p].dependency:
+					matches = SearchKeyword(m.parameters[p].value)
+					if len(matches) == 0:
+						kb_dep_ok = False
+						log.err('Module %s does not exist.' % m.parameters[p].value)
+					elif len(matches) > 1:
+						kb_dep_ok = False
+						log.err('Ambiguous module name: %s.', m.parameters[p].value)
+			
+			if kb_dep_ok:
+				log.info('Module %s has started.' % (m.name))
+				try:
+					start = time.time()
+					job = m.Run()
+					print lib.input_commands
+					if job is None: # no thread created
+						end = time.time()
+						log.info('Module %s has terminated (%s).' % (m.name, show_time(end-start)))						
+						# flush stdin (if not from file!)
+						if len(lib.input_commands) == 0:
+							try:
+								import termios
+								#termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+							except ImportError:
+								import msvcrt
+								while msvcrt.kbhit():
+									msvcrt.getch()
+							except:
+								log.err(sys.exc_info()[1])
+
+					else: # thread will run in the background
+						lib.scheduler.add(m.name, start, job)
+						
+				except:
+					traceback.format_exc()
+					log.err(sys.exc_info()[1])
 			
 	# print command history
 	elif command == 'history':
@@ -203,14 +246,19 @@ def execute_command(command):
 
 	elif command == 'kb':
 		for a in sorted(lib.kb.keys()):
+			if len(lib.kb.subkeys(a)) == 0:
+				continue
 			log.attachline(log.Color.purple('%s:' % a))
-			for b in sorted(lib.kb[a].keys()):
+			for b in sorted(lib.kb.subkeys(a)):
 				log.writeline(log.Color.purple('%s: ' % b))
-				for c in lib.kb[a][b].split('\n'):
+				for c in lib.kb.get(a, b).split('\n'):
 					log.writeline('    %s' % c)
 
 	elif command[:3] == 'kb ':
 		log.err('Not implemented yet.')
+	
+	elif command == 'jobs':
+		lib.scheduler.show()
 	
 	# empty, new line, comment
 	elif command == '' or command[0] == '#':
@@ -231,26 +279,38 @@ def execute_command(command):
 
 def set_module(module):
 	m = None
-	# find matching modules
-	matches = SearchKeyword(module, moduleonly=True)	
-	if len(matches) == 0:
-		pass # module does not exists
-	elif len(matches) > 1:
-		log.warn('Ambiguous module name: %s.' % module)
-		return
+	# first, direct match
+	if module in lib.modules:
+		m = module
 	else:
-		m = matches[0]
+		# find matching modules
+		matches = SearchKeyword(module, moduleonly=True)	
+		if len(matches) == 0:
+			pass # module does not exist
+		elif len(matches) > 1:
+			log.warn('Ambiguous module name: %s.' % module)
+			return
+		else:
+			m = matches[0]
 
 	# found exactly one?
 	if m is not None:
-		lib.active_module = lib.modules[m]
-		lib.prompt = "%s > " % (m)
-		lib.module_history.append(m)
-		lib.active_module.ResetParameters()
-		for p in lib.active_module.parameters:
-			if lib.active_module.parameters[p].value == '' and p in lib.global_parameters:
-				lib.active_module.parameters[p].value = lib.global_parameters[p]
-				log.info('Parameter %s is set to global value %s.' % (p, lib.global_parameters[p]))
+		# check dependencies
+		dependency_missing = False
+		for x in lib.modules[m].dependencies:
+			if x not in lib.modules:
+				log.err('Dependency module \'%s\' does not exist.' % x)
+				dependency_missing = True
+
+		if not dependency_missing:
+			lib.active_module = lib.modules[m]
+			lib.prompt = "%s > " % (m)
+			lib.module_history.append(m)
+			lib.active_module.ResetParameters()
+			for p in lib.active_module.parameters:
+				if lib.active_module.parameters[p].value == '' and p in lib.global_parameters:
+					lib.active_module.parameters[p].value = lib.global_parameters[p]
+					log.info('Parameter %s is set to global value %s.' % (p, lib.global_parameters[p]))
 	else:
 		log.err('Module %s does not exist.' % (module))
 
@@ -285,20 +345,20 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 
 	if basics:
 		length = max([0] + [len(x) for x in ['Name', 'Date', 'Version', 'License']])
-		log.attachline( '%*s: %s' % (length, 'Name', m.name))
-		log.attachline('%*s: %s' % (length, 'Date', m.date))
-		log.attachline('%*s: %s' % (length, 'Version', m.version))
-		log.attachline('%*s: %s' % (length, 'License', m.license))
+		log.attachline(log.Color.purple('%*s: ' % (length, 'Name')) + '%s' % (m.name))
+		log.attachline(log.Color.purple('%*s: ' % (length, 'Date')) + '%s' % (m.date))
+		log.attachline(log.Color.purple('%*s: ' % (length, 'Version')) + '%s' % (m.version))
+		log.attachline(log.Color.purple('%*s: ' % (length, 'License')) + '%s' % (m.license))
 		log.attachline()
 	
 	if authors:
-		log.attachline('Authors:')
+		log.attachline(log.Color.purple('Authors:'))
 		for a in m.authors:
 			log.writeline('%s %s %s' % (a.name, '<%s>' % (a.email) if len(a.email) > 0 else '', '{%s}' % (a.web) if len(a.web) > 0 else ''))
 		log.attachline()
 
 	if options and len(m.parameters) > 0:
-		log.attachline('Parameters:')
+		log.attachline(log.Color.purple('Parameters:'))
 		params = m.parameters.keys() if not missing else [p for p in m.parameters.keys() if m.parameters[p].value == '']
 		maxn = max([4]+[len(p) for p in params])
 		maxv = max([5]+[len(m.parameters[p].value) for p in params])
@@ -310,18 +370,18 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.writeline()
 	
 	if description:
-		log.attachline('Description:')
-		log.writeline(m.description)
+		log.attachline(log.Color.purple('Description:'))
+		log.attachline(m.description)
 		log.writeline()
 
 	if references and len(m.references)>0:
-		log.attachline('References:')
+		log.attachline(log.Color.purple('References:'))
 		for r in m.references:
 			log.writeline(r)
 		log.writeline()
 	
 	if tags and len(m.tags) > 0:
-		log.attachline('Tags:')
+		log.attachline(log.Color.purple('Tags:'))
 		for i in range(0, len(m.tags)):
 			if i == 0:
 				log.write('%s' % m.tags[i])
@@ -330,13 +390,13 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.writeline('\n')
 		
 	if kb and len(m.kb_access) > 0:
-		log.attachline('Knowledge Base:')
+		log.attachline(log.Color.purple('Knowledge Base:'))
 		for k in m.kb_access:
 			log.writeline(k)
 		log.writeline()
 
 	if dependencies and len(m.dependencies) > 0:
-		log.attachline('Module dependencies:')
+		log.attachline(log.Color.purple('Module dependencies:'))
 		maxd = max([6] + [len(d) for d in m.dependencies])
 		log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
 		log.writeline(log.Color.purple('%s  %s' % ('-' * maxd, '-' * 7)))
@@ -344,9 +404,9 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 			log.writeline('%-*s  %s  ' % (maxd, d, m.dependencies[d]))
 		log.writeline()
 
-	if changelog and len(m.changelog) > 0:
-		log.attachline('Changelog:')
-		log.writeline(m.changelog)
+	if changelog and len(m.changelog.strip()) > 0:
+		log.attachline(log.Color.purple('Changelog:'))
+		log.attachline(m.changelog)
 		log.writeline()
 	
 def print_help():
@@ -375,6 +435,7 @@ def print_help():
 		('history', 'show command history'),
 		('module_history', 'show history of selected modules'),
 		('kb', 'show the Knowledge Base'),
+		('jobs', 'show jobs in background')
 		('# comment', 'comment (nothing will happen)'),
 	]
 	maxc = max([7] + [len(x) for x, y in commands])

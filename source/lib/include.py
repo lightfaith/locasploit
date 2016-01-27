@@ -1,7 +1,13 @@
 #!/usr/bin/env python
-import os, sys, re, time, importlib, imp, subprocess
+import os, sys, re, time, importlib, imp, subprocess, threading, traceback, signal
 import define as lib
 import log
+
+def signal_handler(signal, frame):
+	lib.scheduler.stop()
+	sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
 
 def load_modules():
 	""" Import modules from modules/ folder """
@@ -33,21 +39,13 @@ def show_time(time):
 	time = time % 60
 	return '%d:%02d:%06.3f' % (hours, minutes, time)
 
-def command(c, value=False, stdout=True):
-	commands = filter(None, c.split('|'))
-	pss = []
-	for i in range(0, len(commands)):
-		com = filter(None, commands[i].split(' '))
-		if i==0:
-			pss.append(subprocess.Popen(com, stdout=subprocess.PIPE, env={'PATH': os.environ['PATH']}))
-		else:
-			pss.append(subprocess.Popen(com, stdout=subprocess.PIPE, env={'PATH': os.environ['PATH']}, stdin=pss[i-1].stdout))
-		i += 1
-	
+def command(provided_command, value=False, stdout=True): # TODO definitely not complete - &&, ||, &, ;
+	#commands = provided_command.split('|')
+	sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE)
 	if stdout:
-		return pss[-1].stdout.read()
-	elif value:
-		return pss[-1].returncode
+		return sp.stdout.read()
+	if value:
+		return sp.returncode
 
 def command_exists(c):
 	com = command('which %s' % (c))

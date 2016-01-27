@@ -152,26 +152,26 @@ def SearchKeyword(keyword, moduleonly=False):
 		by_kb = []
 		by_dependency = []
 		by_version = []
-		by_module = SearchAbbr(keyword, modules.keys()) + [x for x in modules if keyword in x]
+		by_module = SearchAbbr(keyword.lower(), [x.lower() for x in modules.keys()]) + [x for x in modules if keyword.lower() in x.lower()]
 
 		if not moduleonly:
 			# in tags
-			by_tag = [x for x in modules if keyword in modules[x].tags]
+			by_tag = [x for x in modules if keyword.lower() in [y.lower() for y in modules[x].tags]]
 			
 			# in parameters
-			by_parameter = [x for x in modules if keyword in modules[x].parameters]
+			by_parameter = [x for x in modules if keyword.lower() in [y.lower() for y in modules[x].parameters]]
 		
 			# in authors
-			by_author = [x for x in modules for authors in modules[x].authors if keyword in authors.name or keyword in authors.email or keyword in authors.web]
+			by_author = [x for x in modules for authors in modules[x].authors if keyword.lower() in authors.name.lower() or keyword.lower() in authors.email.lower() or keyword.lower() in authors.web.lower()]
 		
 			# in kb
-			by_kb = [x for x in modules if keyword.upper() in modules[x].kb_access]
+			by_kb = [x for x in modules if keyword.upper() in [y.upper() for y in modules[x].kb_access]]
 
 			# in dependencies (or abbreviations)
-			by_dependency = [x for x in modules if len(SearchAbbr(keyword, modules[x].dependencies.keys())) > 0]
+			by_dependency = [x for x in modules if len(SearchAbbr(keyword.lower(), [y.lower() for y in modules[x].dependencies.keys()])) > 0]
 
 			# in version
-			by_version = [x for x in modules if keyword == modules[x].version]
+			by_version = [x for x in modules if keyword.lower() == modules[x].version.lower()]
 		
 		# union everything and return
 		total = []

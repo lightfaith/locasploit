@@ -12,18 +12,6 @@ parser = argparse.ArgumentParser(prog='locasploit', description='Local enumerati
 parser.add_argument('-c', type=str, help = 'Load the specified configuration file', nargs=1, metavar='input_file', dest='input_file')
 args = parser.parse_args()
 
-#def load_modules():
-#	""" Import modules from modules/ folder """
-#	module_names = [x[:-3] for x in os.listdir('source/modules') if x[0]!='_' and x[-3:] == '.py']
-#
-#	for m in module_names:
-#		importlib.import_module('source.modules.'+m)
-##
-#	#print module_objects
-#	for v in lib.module_objects:
-#		modules[v.name] = v
-#	#log.writeline(lib.modules)
-#	log.info('%d modules loaded.' % (len(lib.modules)))
 
 def main():
 	if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
@@ -32,19 +20,21 @@ def main():
 	# input from file?
 	if args.input_file is not None:
 		with open(args.input_file[0], 'r') as f:
-			commands = f.read().splitlines()
+			lib.input_commands = f.read().splitlines()
 			#print commands
-			for c in commands:
+			while len(lib.input_commands)>0:
+				c = lib.input_commands[0]
 				log.prompt()
 				log.attachline(c)
 				execute_command(c)
-	else:
-		# main program loop
-		while True:
-			log.prompt()
-			command = raw_input()
-			execute_command(command)
-		# end of main program loop
+				del lib.input_commands[0]
+
+	# main program loop
+	while True:
+		log.prompt()
+		command = raw_input()
+		execute_command(command)
+	# end of main program loop
 
 
 load_modules()

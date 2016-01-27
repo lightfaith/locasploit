@@ -1,13 +1,19 @@
 #!/usr/bin/env python
-import os, pwd
+import os, pwd, threading
+from kb import *
+from scheduler import *
 
+python_version = '2.7.9' # TODO determine on the fly
 prompt = ' >  '
 module_objects = []
 modules = {}
 active_module = None
+input_commands = []
 command_history = []
 module_history = []
-kb = {}
+kb = KB()
+scheduler = Scheduler()
+scheduler.start()
 global_parameters = {
 	'USER': pwd.getpwuid(os.getuid())[0], 
 	'HOME': pwd.getpwuid(os.getuid())[5],

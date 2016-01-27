@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from include import *
 
+loglock = threading.Lock()
+
 class Color:
 	PURPLE = '\033[95m'
 	BLUE = '\033[94m'
@@ -30,30 +32,48 @@ class Color:
 		return Color.BOLD + string + Color.END
 
 def prompt():
-	sys.stdout.write(Color.bold(Color.purple(lib.prompt)))
+	loglock.acquire()
+	sys.stdout.write(Color.bold(Color.purple(lib.prompt.expandtabs(4))))
+	loglock.release()
 
 def write(string=''):
-	sys.stdout.write('    %s' % str(string))
+	loglock.acquire()
+	sys.stdout.write('    %s'.expandtabs(4) % str(string))
+	loglock.release()
 
 def writeline(string=''):
-	print '    %s' % str(string)
+	loglock.acquire()
+	print '    %s'.expandtabs(4) % str(string)
+	loglock.release()
 
 def attach(string=''):
-	sys.stdout.write(str(string))
+	loglock.acquire()
+	sys.stdout.write(str(string).expandtabs(4))
+	loglock.release()
 
 def attachline(string=''):
-	print str(string)
+	loglock.acquire()
+	print str(string).expandtabs(4)
+	loglock.release()
 
 def info(string=''):
-	print '%s %s' % (Color.bold(Color.blue('[.]')), string)
+	loglock.acquire()
+	print '%s %s'.expandtabs(4) % (Color.bold(Color.blue('[.]')), string)
+	loglock.release()
 
 def ok(string=''):
-	print '%s %s' % (Color.bold(Color.green('[+]')), string)
+	loglock.acquire()
+	print '%s %s'.expandtabs(4) % (Color.bold(Color.green('[+]')), string)
+	loglock.release()
 
 def warn(string=''):
-	print '%s %s' % (Color.bold(Color.yellow('[!]')), string)
+	loglock.acquire()
+	print '%s %s'.expandtabs(4) % (Color.bold(Color.yellow('[!]')), string)
+	loglock.release()
 
 def err(string=''):
-	print '%s %s' % (Color.bold(Color.red('[-]')), string)
+	loglock.acquire()
+	print '%s %s'.expandtabs(4) % (Color.bold(Color.red('[-]')), string)
+	loglock.release()
 
 
