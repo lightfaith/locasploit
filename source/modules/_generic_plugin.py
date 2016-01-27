@@ -15,14 +15,9 @@ class GenericModule():
 	def Run(self):
 		print '[!] You should not run this module!'
 
-	def kb_init(self):
-		for x in self.kb_access:
-			if x not in kb:
-				kb[x] = {}
-	
-	def kb_save(self, struct, key, content, desc):
+	def kb_save(self, key, subkey, content, desc):
 		if content is not None and len(content)>0:
 			log.ok(desc)
 			for l in content.splitlines():
 				log.writeline(l)
-			struct[key] = content
+			lib.kb.save(key, subkey, content)

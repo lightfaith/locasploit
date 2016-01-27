@@ -24,7 +24,16 @@ class Module(GenericModule):
 			'dmesg',
 		]
 		
-		self.description = 'This module extracts various info about the kernel (/proc/version, uname, rpm, dmesg, /boot/vmlinuz-*).'
+		self.description = """
+This module extracts various info about the kernel.
+Specifically, the following commands are issued:
+	cat /proc/version
+	uname -a
+	uname -mrs
+	rpm -q kernel
+	dmesg | grep Linux
+	ls /boot | grep vmlinuz-
+"""
 		self.kb_access = [
 			'KERNEL',
 		]
@@ -39,47 +48,44 @@ class Module(GenericModule):
 		}
 
 	def Check(self):
-		self.kb_init()
 		log.info('This module does not support check.')
 	
 	def Run(self):
-		self.kb_init()
 
 		# # # # # # # #
-		struct = kb['KERNEL']
 		if os.path.isdir('/proc'):
 			if os.path.exists('/etc/issue'):
 				# get /proc/version
 				with open('/proc/version', 'r') as f:
-					self.kb_save(struct, 'PROC_VERSION', f.read(), '/proc/version:')
+					self.kb_save('KERNEL', 'PROC_VERSION', f.read(), '/proc/version:')
 			else:
 				log.err('/proc/version does not exist.')
 		else:
 			log.err('/proc does not exist.')
 		# run uname -a and uname -mrs
 		if command_exists('uname'):
-			self.kb_save(struct, 'UNAME-A', command('uname -a'), 'uname -a:')
-			self.kb_save(struct, 'UNAME-MRS', command('uname -mrs'), 'uname -mrs:')
+			self.kb_save('KERNEL', 'UNAME-A', command('uname -a'), 'uname -a:')
+			self.kb_save('KERNEL', 'UNAME-MRS', command('uname -mrs'), 'uname -mrs:')
 		else:
 			log.err('Uname cannot be executed.')
 		# run rpm -q kernel
 		if command_exists('rpm'):
-			self.kb_save(struct, 'RPM', command('rpm -q kernel'), 'rpm -q kernel:')
+			self.kb_save('KERNEL', 'RPM', command('rpm -q kernel'), 'rpm -q kernel:')
 		else:
 			log.err('Rpm cannot be executed.')
 		# run dmesg | grep Linux
 		if command_exists('dmesg'):
-			self.kb_save(struct, 'DMESG_LINUX', command('dmesg | grep Linux'), 'gmesg | grep Linux:')
+			self.kb_save('KERNEL', 'DMESG_LINUX', command('dmesg | grep Linux'), 'gmesg | grep Linux:')
 		else:
 			log.err('Dmesg cannot be executed.')
 		# what vmlinuz?
 		if os.path.isdir('/boot'):
 			vmlinuzes = [x for x in os.listdir('/boot') if x[:8] == 'vmlinuz-']
-			self.kb_save(struct, 'VMLINUZ', '\n'.join(vmlinuzes), 'vmlinuz in /boot/:')
+			self.kb_save('KERNEL', 'VMLINUZ', '\n'.join(vmlinuzes), 'vmlinuz in /boot/:')
 		else:
 			log.err('/boot does not exist.')
 		# # # # # # # #
-		pass
+		return None
 
 
 lib.module_objects.append(Module())

@@ -19,7 +19,10 @@ class Module(GenericModule):
 		self.tags = [
 			'',
 		]
-		self.description = 'This module is designed to be used as a template for new modules. For help with this madness, check the "template_commented" module.'
+		self.description = """
+This module is designed to be used as a template for new modules. 
+For help with this madness, check the "template_commented" module.
+"""
 		self.kb_access = [
 			'',
 		]
@@ -27,27 +30,25 @@ class Module(GenericModule):
 		self.dependencies = {
 			'': '',
 		}
-		self.changelog = ''
+		self.changelog = """
+"""
 
 		self.ResetParameters()
 
 	def ResetParameters(self):
 		self.parameters = {
-			'': Parameter(value='', mandatory=True, description=''),
+			'': Parameter(value='', mandatory=True, description='', kb=False, dependency=False),
 		}
 
 	def Check(self):
-		self.kb_init()
 		log.info('This module does not support check.')
 	
 	def Run(self):
-		self.kb_init()
-
 		# # # # # # # #
 		# Define your code here
 		
 		# # # # # # # #
-		pass
+		return None
 	
 
 lib.module_objects.append(Module())

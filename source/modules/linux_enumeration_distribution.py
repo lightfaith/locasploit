@@ -39,31 +39,28 @@ class Module(GenericModule):
 		}
 
 	def Check(self):
-		self.kb_init()
 		log.info('This module does not support check.')
 	
 	def Run(self):
-		self.kb_init()
 
 		# # # # # # # #
-		struct = kb['DISTRIBUTION']
 		
 		if os.path.isdir('/etc'):
 			if os.path.exists('/etc/issue'):
 				# get /etc/issue
 				with open('/etc/issue', 'r') as f:
-					self.kb_save(struct, 'ISSUE', f.read(), '/etc/issue:')
+					self.kb_save('DISTRIBUTION', 'ISSUE', f.read(), '/etc/issue:')
 			else:
 				log.err('/etc/issue does not exist.')
 			# get /etc/*-release
 			release_files = [x for x in os.listdir('/etc/') if re.match('.*-release$', x)]
 			for x in release_files:
 				with open('/etc/' + x, 'r') as f:
-					self.kb_save(struct, x.upper(), f.read(), '/etc/%s:' % (x))
+					self.kb_save('DISTRIBUTION', x.upper(), f.read(), '/etc/%s:' % (x))
 		else:
 			log.err('/etc does not exist.')
 		# # # # # # # #
-		pass
+		return None
 	
 
 lib.module_objects.append(Module())
