@@ -36,29 +36,41 @@ class Module(GenericModule):
 
 	def ResetParameters(self):
 		self.parameters = {
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 		}
 
 	def Check(self):
 		log.info('This module does not support check.')
 	
 	def Run(self):
-
+		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		
-		if os.path.isdir('/etc'):
-			if os.path.exists('/etc/issue'):
-				# get /etc/issue
+		if os.access('/etc', os.R_OK) and os.access('/etc', os.X_OK):
+			# get /etc/issue
+			if os.access('/etc/issue', os.R_OK):
 				with open('/etc/issue', 'r') as f:
-					self.kb_save('DISTRIBUTION', 'ISSUE', f.read(), '/etc/issue:')
+					result = f.read()
+					lib.kb.add('DISTRIBUTION', 'ISSUE', result)
+					if not silent:
+						log.ok('/etc/issue:')
+						for x in result.splitlines():
+							log.writeline(x)
 			else:
-				log.err('/etc/issue does not exist.')
+				log.err('/etc/issue cannot be accessed.')
+		
 			# get /etc/*-release
 			release_files = [x for x in os.listdir('/etc/') if re.match('.*-release$', x)]
 			for x in release_files:
 				with open('/etc/' + x, 'r') as f:
-					self.kb_save('DISTRIBUTION', x.upper(), f.read(), '/etc/%s:' % (x))
+					result = f.read()
+					lib.kb.add('DISTRIBUTION', x.upper(), result)
+					if not silent:
+						log.ok('%s:' % x)
+						for l in result.splitlines():
+							log.writeline(l)
 		else:
-			log.err('/etc does not exist.')
+			log.err('/etc cannot be accessed.')
 		# # # # # # # #
 		return None
 	

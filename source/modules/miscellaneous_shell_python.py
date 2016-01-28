@@ -26,6 +26,7 @@ This module uses Python's exec() function to execute any commands. These will ru
 """
 		self.kb_access = [
 		]
+		
 		self.dependencies = {
 		}
 		self.changelog = """
@@ -35,12 +36,14 @@ This module uses Python's exec() function to execute any commands. These will ru
 
 	def ResetParameters(self):
 		self.parameters = {
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 		}
 
 	def Check(self):
 		log.info('This module does not support check.')
 	
 	def Run(self):
+		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		old_prompt = lib.prompt
 		if lib.python_version[0] == '2':
@@ -53,16 +56,19 @@ This module uses Python's exec() function to execute any commands. These will ru
 		
 		ends = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
 		end_string = ', '.join(map(log.Color.bold, ends[:-1])) + ' or ' + log.Color.bold(ends[-1])
-		log.info('Type %s to exit.' % (end_string))
+		if not silent:
+			log.info('Type %s to exit.' % (end_string))
 		lib.prompt = '>>> '
 		
 		while True:
-			log.prompt()
+			if not silent:
+				log.prompt()
 			# check input commands first
 			if len(lib.input_commands) > 0:
 				line = lib.input_commands[0]
 				del lib.input_commands[0]
-				log.attachline(line)
+				if not silent:
+					log.attachline(line)
 			else:
 				line = func()
 			if line in ends:

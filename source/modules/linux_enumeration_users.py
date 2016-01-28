@@ -38,6 +38,7 @@ class Module(GenericModule):
 
 	def ResetParameters(self):
 		self.parameters = {
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 			'FILE': Parameter(value='/etc/passwd', mandatory=True, description='File to parse'),
 		}
 
@@ -45,8 +46,10 @@ class Module(GenericModule):
 		log.warn('This module does not support check.')
 
 	def Run(self):
-		
+		silent = positive(self.parameters['SILENT'].value)
+		# # # # # # # #
 		# FILL IN YOUR CODE HERE
+		# # # # # # # #
 		return None
 
 lib.module_objects.append(Module())

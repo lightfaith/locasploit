@@ -35,12 +35,14 @@ This module allows bash command execution.
 
 	def ResetParameters(self):
 		self.parameters = {
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 		}
 
 	def Check(self):
 		log.info('This module does not support check.')
 	
 	def Run(self):
+		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		old_prompt = lib.prompt
 		if lib.python_version[0] == '2':
@@ -53,26 +55,30 @@ This module allows bash command execution.
 
 		ends = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
 		end_string = ', '.join(map(log.Color.bold, ends[:-1])) + ' or ' + log.Color.bold(ends[-1])
-		log.info('Type %s to exit.' % (end_string))
+		if not silent:
+			log.info('Type %s to exit.' % (end_string))
 		if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
 			lib.prompt = '  # '
 		else:
 			lib.prompt = '  $ '
 		
 		while True:
-			log.prompt()
+			if not silent:
+				log.prompt()
 			# check input_commands
 			if len(lib.input_commands) > 0:
 				line = lib.input_commands[0]
 				del lib.input_commands[0]
-				log.attachline(line)
+				if not silent:
+					log.attachline(line)
 			else:
 				line = func()
 
 			if line in ends:
 				break
 			try:
-				log.attach(command(line))
+				if not silent:
+					log.attach(command(line))
 			except:
 				log.err(sys.exc_info()[1])
 				

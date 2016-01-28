@@ -35,7 +35,7 @@ class Module(GenericModule):
 This module is designed to be used as a template for new modules. 
 Tired of the comments? Check the "template" module.
 """
-		# If structures in knowledge base will be accessed, you should specify them here. Modules can be searched based on these fields.
+		# If structures in knowledge base will be accessed, you should specify them here. Modules can be searched based on these fields. Do not use search keywords and symbols and spaces.
 		self.kb_access = [
 			#'USERS',
 		]
@@ -51,12 +51,13 @@ Tired of the comments? Check the "template" module.
 		self.ResetParameters() # do not touch this
 
 	def ResetParameters(self):
-		# Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used.
+		# Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used. Do not use spaces.
 		# If the parameters is marked as kb or dependency, value is checked for existence (in kb or module list) before the execution.
 		# For KB subkeys use dot notation (e.g. DISTRIBUTION.OS-RELEASE).
 		# For dependencty, abbreviations can be used.
+		# Always define SILENT parameter and do not print anything (except cricital errors) if SILENT==yes - for intermodule calls
 		self.parameters = {
-			#'FILE': Parameter(value='/etc/passwd', mandatory=True, description='File to parse', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 		}
 
 	def Check(self):
@@ -64,6 +65,7 @@ Tired of the comments? Check the "template" module.
 		log.info('This module does not support check.')
 	
 	def Run(self):
+		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		# Define your code here
 		log.ok('Template module says: "Hello World!"')

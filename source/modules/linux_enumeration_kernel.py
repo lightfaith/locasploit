@@ -45,45 +45,77 @@ Specifically, the following commands are issued:
 
 	def ResetParameters(self):
 		self.parameters = {
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
 		}
 
 	def Check(self):
 		log.info('This module does not support check.')
 	
 	def Run(self):
-
+		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
-		if os.path.isdir('/proc'):
-			if os.path.exists('/etc/issue'):
-				# get /proc/version
-				with open('/proc/version', 'r') as f:
-					self.kb_save('KERNEL', 'PROC_VERSION', f.read(), '/proc/version:')
-			else:
-				log.err('/proc/version does not exist.')
+		# get /proc/version
+		if os.access('/proc/version', os.R_OK):
+			with open('/proc/version', 'r') as f:
+				result = f.read()
+				lib.kb.add('KERNEL', 'PROC_VERSION', result)
+				if not silent:
+					log.ok('/proc/version:')
+					for x in result.splitlines():
+						log.writeline(x)
 		else:
-			log.err('/proc does not exist.')
+			log.err('/proc/version cannot be accessed.')
+		
 		# run uname -a and uname -mrs
 		if command_exists('uname'):
-			self.kb_save('KERNEL', 'UNAME-A', command('uname -a'), 'uname -a:')
-			self.kb_save('KERNEL', 'UNAME-MRS', command('uname -mrs'), 'uname -mrs:')
+			unamea = command('uname -a')
+			lib.kb.add('KERNEL', 'UNAME-A', unamea)
+			if not silent:
+				log.ok('uname -a:')
+				for x in unamea.splitlines():
+					log.writeline(x)
+			unamemrs = command('uname -mrs')
+			lib.kb.add('KERNEL', 'UNAME-MRS', unamemrs)
+			if not silent:
+				log.ok('uname -mrs:')
+				for x in unamemrs.splitlines():
+					log.writeline(x)
 		else:
 			log.err('Uname cannot be executed.')
+		
 		# run rpm -q kernel
 		if command_exists('rpm'):
-			self.kb_save('KERNEL', 'RPM', command('rpm -q kernel'), 'rpm -q kernel:')
+			rpm = command('rpm -q kernel')
+			lib.kb.add('KERNEL', 'RPM', rpm)
+			if not silent:
+				log.ok('rpm -q kernel:')
+				for x in rpm.splitlines():
+					log.writeline(x)
 		else:
 			log.err('Rpm cannot be executed.')
+		
 		# run dmesg | grep Linux
 		if command_exists('dmesg'):
-			self.kb_save('KERNEL', 'DMESG_LINUX', command('dmesg | grep Linux'), 'gmesg | grep Linux:')
+			dm = command('dmesg | grep Linux')
+			lib.kb.add('KERNEL', 'DMESG_LINUX', dm)
+			if not silent:
+				log.ok('dmesg | grep Linux:')
+				for x in dm.splitlines():
+					log.writeline(x)
+				
 		else:
 			log.err('Dmesg cannot be executed.')
+		
 		# what vmlinuz?
-		if os.path.isdir('/boot'):
+		if os.access('/boot', os.R_OK) and os.access('/boot', os.X_OK):
 			vmlinuzes = [x for x in os.listdir('/boot') if x[:8] == 'vmlinuz-']
-			self.kb_save('KERNEL', 'VMLINUZ', '\n'.join(vmlinuzes), 'vmlinuz in /boot/:')
+			lib.kb.add('KERNEL', 'VMLINUZ', '\n'.join(vmlinuzes))
+			if not silent:
+				log.ok('vmlinuz in /boot/:')
+				for x in vmlinuzes:
+					log.writeline(x)
 		else:
-			log.err('/boot does not exist.')
+			log.err('/boot cannot be accessed.')
 		# # # # # # # #
 		return None
 
