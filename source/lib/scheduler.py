@@ -3,10 +3,11 @@ import threading
 from include import *
 
 class Job:
-    def __init__(self, name, start, job):
-        self.name = name
-        self.start = start
-        self.job = job
+	def __init__(self, name, start, job, timeout=None):
+		self.name = name
+		self.start = start
+		self.job = job
+		self.timeout = timeout
 
 class Scheduler(threading.Thread):
 	def __init__(self):
@@ -32,16 +33,24 @@ class Scheduler(threading.Thread):
 				del self.jobs[x]
 
 			self.lock.release()
-			time.sleep(0.5)
+			time.sleep(0.25)
 
 
 	def stop(self):
+		self.lock.acquire()
+		for j in self.jobs:
+			if hasattr(self.jobs[j].job, 'stop'):
+				self.jobs[j].job.stop()
+				#log.info('Background job %d is going to terminate.' % j)
+		self.lock.release()
+		while len(self.jobs) > 0: # wait for everything to die
+			time.sleep(0.5)
 		self.terminate = True
 	
-	def add(self, name, start, job):
+	def add(self, name, start, job, timeout=None):
 		self.lock.acquire()
 		jobid = self.newid()
-		self.jobs[jobid] = Job(name, start, job)
+		self.jobs[jobid] = Job(name, start, job, timeout)
 		log.info('Module %s will run in the background with id %d.' % (name, jobid))
 		self.lock.release()
 
@@ -62,11 +71,18 @@ class Scheduler(threading.Thread):
 		maxn = max([len(self.jobs[x].name) for x in self.jobs] + [4])
 		times = [show_time(now - self.jobs[x].start) for x in self.jobs]
 		maxt = max([len(t) for t in times] + [4])
+		maxto = max([len(self.jobs[x].timeout) for x in self.jobs if self.jobs[x].timeout is not None] + [7])
 		
-		log.writeline('%*s  %-*s  %-*s' % (maxi, 'ID', maxn, 'NAME', maxt, 'TIME'))
-		log.writeline(log.Color.purple('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt))
+		log.writeline('%*s  %-*s  %-*s  %-*s' % (maxi, 'ID', maxn, 'NAME', maxt, 'TIME', maxto, 'TIMEOUT'))
+		log.writeline(log.Color.purple('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt + '  ' + '-' * maxto))
 		keys = sorted(self.jobs.keys())
 		for i in range(0, len(keys)):
 			x = keys[i]
-			log.writeline('%*s  %-*s  %*s' % (maxi, x, maxn, self.jobs[x].name, maxt, times[i]))
+			log.writeline('%*s  %-*s  %*s  %-*s' % (maxi, x, maxn, self.jobs[x].name, maxt, times[i], maxto, '' if self.jobs[x].timeout is None else self.jobs[x].timeout))
 		self.lock.release()
+
+	def kill(self, jid):
+		if int(jid) in self.jobs:
+			self.jobs[int(jid)].job.stop()
+
+

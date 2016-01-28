@@ -1,13 +1,18 @@
 #!/usr/bin/env python
-import os, sys, re, time, importlib, imp, subprocess, threading, traceback, signal
+import os, sys, re, time, importlib, imp, subprocess, threading, traceback, signal, logging
 import define as lib
 import log
 
-def signal_handler(signal, frame):
+def exit_program(signal, frame):
+	log.attachline()
+	log.info('Killing all the threads...')
 	lib.scheduler.stop()
+	while lib.scheduler.isAlive():
+		time.sleep(0.1)
+	log.info('%s out.' % lib.appname)
 	sys.exit(0)
 
-signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGINT, exit_program)
 
 def load_modules():
 	""" Import modules from modules/ folder """
@@ -39,9 +44,8 @@ def show_time(time):
 	time = time % 60
 	return '%d:%02d:%06.3f' % (hours, minutes, time)
 
-def command(provided_command, value=False, stdout=True): # TODO definitely not complete - &&, ||, &, ;
-	#commands = provided_command.split('|')
-	sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE)
+def command(provided_command, value=False, stdout=True):
+	sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	if stdout:
 		return sp.stdout.read()
 	if value:
@@ -50,3 +54,6 @@ def command(provided_command, value=False, stdout=True): # TODO definitely not c
 def command_exists(c):
 	com = command('which %s' % (c))
 	return len(command('which %s' % (c))) > 0
+
+def positive(string):
+	return string.lower() in ['yes', 'true', '1']

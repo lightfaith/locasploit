@@ -10,8 +10,7 @@ def execute_command(command):
 
 	# exit
 	if command in ['exit', 'exit()', 'quit', 'quit()', 'q']:
-		lib.scheduler.stop()
-		sys.exit(0)
+		exit_program(None, None)
 	
 	# help
 	elif command == 'help':
@@ -132,44 +131,69 @@ def execute_command(command):
 		for p in lib.global_parameters:
 			log.writeline('%-*s  %s' % (maxp, p, lib.global_parameters[p]))
 
-	# delete global option
-	elif command[:5] == 'delg ':
-		if command[5:] in lib.global_parameters:
-			log.info('Parameter %s = %s removed from global parameters.' % (command[5:], lib.global_parameters[command[5:]]))
-			del lib.global_parameters[command[5:]]
-		else:
-			log.warn('Parameter %s not in global parameters.' % (command[5:]))
-	
 	# set global option
 	elif command[:5] == 'setg ':
-		if command[5:].count('=') + command[5:].count(' ') !=1:
-			log.warn('Parameters are set differently.')
+		command = command.replace('=', ' ')
+		try:
+			spaceindex = command[5:].index(' ')
+		except ValueError:
+			log.err('Parameters are set differently.')
+			return
+		if spaceindex <= 0 or spaceindex == len(command[5:])-1:
+			log.err('Parameters are set differently.')
 		else:
-			parts = filter(None, re.split('\W+', command[5:]))
-			lib.global_parameters[parts[0]] = parts[1]
+			parts = [command[5:5+spaceindex].strip(), command[5+spaceindex:].strip()]
+			lib.global_parameters[parts[0]]=parts[1]
 			log.info('%s = %s (global)' % (parts[0], parts[1]))
+		
+	
+	# delete global option
+	elif command[:5] == 'delg ' or command[:7] == 'unsetg ':
+		length = 5 if command[:5] == 'delg ' else 7
+		if command[length:] in lib.global_parameters:
+			log.info('Parameter %s = %s removed from global parameters.' % (command[length:].strip(), lib.global_parameters[command[length:]].strip()))
+			del lib.global_parameters[command[length:].strip()]
+		else:
+			log.warn('Parameter %s not in global parameters.' % (command[length:].strip()))
 		
 	# set option
 	elif command [:4] == 'set ':
+		command = command.replace('=', ' ')
+		try:
+			spaceindex = command[4:].index(' ')
+		except ValueError:
+			log.err('Parameters are set differently.')
+			return
 		if lib.active_module is None:
 			log.warn('Choose a module first.')
-		elif command[4:].count('=') + command[4:].count(' ') !=1:
+		elif spaceindex <= 0 or spaceindex == len(command[4:])-1:
 			log.err('Parameters are set differently.')
 		else:
-			parts = filter(None, re.split('\W+', command[4:]))
+			parts = [command[4:4+spaceindex].strip(), command[4+spaceindex:].strip()]
 			if parts[0] in lib.active_module.parameters:
 				lib.active_module.parameters[parts[0]].value=parts[1]
 				log.info('%s = %s' % (parts[0], parts[1]))
 			else:
 				log.warn('Non-existent parameter %s.' % (parts[0]))
-		
+	
+	# delete global option
+	elif command[:4] == 'delg ' or command[:6] == 'unset ':
+		length = 4 if command[:4] == 'del ' else 6
+		if command[length:] in lib.global_parameters:
+			log.info('Parameter %s = %s unset.' % (command[length:].strip(), lib.active_module.parameters[command[length:]].strip()))
+			del lib.active_module.parameters[command[length:].strip()]
+		else:
+			log.warn('Parameter %s not in parameters.' % (command[length:].strip()))
+	
 	# check
 	elif command == 'check':
 		m = lib.active_module
 		if m is None:
 			log.warn('Choose a module first.')
 		elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
-				log.warn('Some parameters are undefined.')
+				log.warn('Some parameters are undefined:')
+				for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
+					log.warn('    %s' % x)
 		else:
 			start = time.time()
 			m.Check()
@@ -182,7 +206,9 @@ def execute_command(command):
 		if m is None:
 			log.warn('Choose a module first.')
 		elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
-				log.warn('Some parameters are undefined.')
+				log.warn('Some parameters are undefined:')
+				for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
+					log.warn('    %s' % x)
 		else:
 			kb_dep_ok = True
 			for p in m.parameters:
@@ -216,7 +242,7 @@ def execute_command(command):
 						if len(lib.input_commands) == 0:
 							try:
 								import termios
-								#termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+								termios.tcflush(sys.stdin, termios.TCIOFLUSH)
 							except ImportError:
 								import msvcrt
 								while msvcrt.kbhit():
@@ -225,7 +251,10 @@ def execute_command(command):
 								log.err(sys.exc_info()[1])
 
 					else: # thread will run in the background
-						lib.scheduler.add(m.name, start, job)
+						if lib.active_module.parameters.has_key('TIMEOUT'):
+							lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
+						else:
+							lib.scheduler.add(m.name, start, job)
 						
 				except:
 					traceback.format_exc()
@@ -244,21 +273,20 @@ def execute_command(command):
 			log.writeline(h)
 
 	elif command == 'kb':
-		for a in sorted(lib.kb.keys()):
-			if len(lib.kb.subkeys(a)) == 0:
-				continue
-			log.attachline(log.Color.purple('%s:' % a))
-			for b in sorted(lib.kb.subkeys(a)):
-				log.writeline(log.Color.purple('%s: ' % b))
-				for c in lib.kb.get(a, b).split('\n'):
-					log.writeline('    %s' % c)
+		lib.kb.dump()
 
 	elif command[:3] == 'kb ':
-		log.err('Not implemented yet.')
-	
+		lib.kb.dump(command[3:])	
+
 	elif command == 'jobs':
 		lib.scheduler.show()
-	
+
+	elif command[:10] == 'jobs kill ':
+		if command[10:].strip().isdigit():
+			lib.scheduler.kill(command[10:].strip())
+		else:
+			print 'cannot kill'
+
 	elif command == 'authors':
 		everyone = {}
 		for m in lib.modules:
@@ -276,6 +304,7 @@ def execute_command(command):
 		maxw = max([len(w) for x in everyone for w in everyone[x][1]] + [3])
 		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'PLUGINS', maxw, 'WEB'))
 		log.writeline(log.Color.purple('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw)))
+		# sort by number of plugins, then by name
 		keys = sorted(sorted(everyone.keys(), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
 		for a in everyone:
 			wcounter = 0
@@ -337,9 +366,11 @@ def set_module(module):
 			for p in lib.active_module.parameters:
 				if lib.active_module.parameters[p].value == '' and p in lib.global_parameters:
 					lib.active_module.parameters[p].value = lib.global_parameters[p]
-					log.info('Parameter %s is set to global value %s.' % (p, lib.global_parameters[p]))
+					log.info('Parameter %s is set to global value \'%s\'.' % (p, lib.global_parameters[p]))
 	else:
 		log.err('Module %s does not exist.' % (module))
+
+
 
 
 def print_modules(modules, order_by_date=False):
@@ -364,6 +395,10 @@ def print_modules(modules, order_by_date=False):
 			else:
 				log.attachline("%*s  %-*s  %-*s  %-10s  %-s" % (maxv, '', maxm, '', maxa, a.name, '', ''))
 			acounter += 1
+	log.info('Returned %d/%d modules.' % (len(modules), len(lib.modules)))
+
+
+
 
 def print_module_info(basics=True, authors=True, options=True, missing=False, description=True, references=True, tags=True, kb=True, dependencies=True, changelog=True):
 	m = lib.active_module
@@ -393,7 +428,9 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 
 		log.writeline('%-*s  %-*s  %s  %s' %(maxn, 'NAME', maxv, 'VALUE', 'MANDATORY', 'DESCRIPTION'))
 		log.writeline(log.Color.purple('%s  %s  %s  %s' %('-' * maxn, '-' * maxv, '-' * 9, '-' * 11)))
-		for p in params:
+		# sort by mandatory, then by name
+		keys = sorted(sorted(params, key = lambda y: y), key = lambda x: m.parameters[x].mandatory, reverse=True)
+		for p in keys:
 			log.writeline('%-*s  %-*s      %s      %s' %(maxn, p, maxv, m.parameters[p].value, '+' if m.parameters[p].mandatory else ' ', m.parameters[p].description))
 		log.writeline()
 	
@@ -437,6 +474,10 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.attachline(m.changelog)
 		log.writeline()
 	
+
+
+
+
 def print_help():
 	commands = [
 		('exit, exit(), quit, quit(), q', 'exit the program'),
@@ -456,13 +497,15 @@ def print_help():
 		('show missing', 'show only undefined options for selected module'),
 		('getg', 'show global parameters'),
 		('setg NAME=VALUE, setg NAME VALUE', 'set global parameter'),
-		('delg NAME', 'delete global parameters'),
+		('delg NAME, unsetg NAME', 'delete global parameter'),
 		('set NAME=VALUE, set NAME VALUE', 'set parameter for selected module'),
+		('del NAME, unset NAME', 'unset global parameter'),
 		('check', 'check if module will be successful'),
 		('run, execute', 'run the module'),
 		('history', 'show command history'),
 		('module_history', 'show history of selected modules'),
 		('kb', 'show the Knowledge Base'),
+		('kb a b', 'show content of KB > a > b'),
 		('jobs', 'show jobs in background'),
 		('authors', 'show information about authors'),
 		('# comment', 'comment (nothing will happen)'),

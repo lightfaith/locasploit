@@ -3,6 +3,7 @@ import os, pwd, threading
 from kb import *
 from scheduler import *
 
+appname = 'Locasploit'
 python_version = '2.7.9' # TODO determine on the fly
 prompt = ' >  '
 module_objects = []
