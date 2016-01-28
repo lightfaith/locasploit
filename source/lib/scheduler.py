@@ -40,26 +40,33 @@ class Scheduler(threading.Thread):
 	
 	def add(self, name, start, job):
 		self.lock.acquire()
-		#jobid = self.newid()
-		jobid = 1
+		jobid = self.newid()
 		self.jobs[jobid] = Job(name, start, job)
 		log.info('Module %s will run in the background with id %d.' % (name, jobid))
 		self.lock.release()
 
 	def newid(self):
 		result = 1
-		self.lock.acquire()
+		#self.lock.acquire()
 		while True:
-			if result not in self.jobs:
+			if not self.jobs.has_key(result):
 				break
 			result += 1
-		self.lock.release()
+		#self.lock.release()
 		return result
 	
 	def show(self):
 		now = time.time()
 		self.lock.acquire()
-		for x in self.jobs:
-			s = self.jobs[x]
-			print x, s.name, now-s.start
+		maxi = max([len(str(x)) for x in self.jobs] + [2])
+		maxn = max([len(self.jobs[x].name) for x in self.jobs] + [4])
+		times = [show_time(now - self.jobs[x].start) for x in self.jobs]
+		maxt = max([len(t) for t in times] + [4])
+		
+		log.writeline('%*s  %-*s  %-*s' % (maxi, 'ID', maxn, 'NAME', maxt, 'TIME'))
+		log.writeline(log.Color.purple('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt))
+		keys = sorted(self.jobs.keys())
+		for i in range(0, len(keys)):
+			x = keys[i]
+			log.writeline('%*s  %-*s  %*s' % (maxi, x, maxn, self.jobs[x].name, maxt, times[i]))
 		self.lock.release()

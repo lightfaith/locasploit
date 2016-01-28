@@ -209,7 +209,6 @@ def execute_command(command):
 				try:
 					start = time.time()
 					job = m.Run()
-					print lib.input_commands
 					if job is None: # no thread created
 						end = time.time()
 						log.info('Module %s has terminated (%s).' % (m.name, show_time(end-start)))						
@@ -260,6 +259,34 @@ def execute_command(command):
 	elif command == 'jobs':
 		lib.scheduler.show()
 	
+	elif command == 'authors':
+		everyone = {}
+		for m in lib.modules:
+			for a in lib.modules[m].authors:
+				if everyone.has_key((a.name, a.email)):
+					everyone[(a.name, a.email)][0] += 1
+					if a.web not in everyone[(a.name, a.email)][1]:
+						everyone[(a.name, a.email)][1].append(a.web)
+				else:
+					everyone[(a.name, a.email)] = [1, [a.web]]
+		
+		maxn = max([len(x[0]) for x in everyone] + [4])
+		maxe = max([len(x[1]) for x in everyone] + [5])
+		maxp = max([len(str(everyone[x][0])) for x in everyone] + [7])
+		maxw = max([len(w) for x in everyone for w in everyone[x][1]] + [3])
+		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'PLUGINS', maxw, 'WEB'))
+		log.writeline(log.Color.purple('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw)))
+		keys = sorted(sorted(everyone.keys(), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
+		for a in everyone:
+			wcounter = 0
+			for w in everyone[a][1]:
+				if wcounter == 0:
+					log.writeline('%*s  %-*s  %*d  %-*s' % (maxn, a[0], maxe, a[1], maxp, everyone[a][0], maxw, w))
+				else:
+					log.writeline('%*s  %-*s  %*d  %*s' % (maxn, '', maxe, '', maxp, '', maxw, w))
+
+				wcounter += 1
+
 	# empty, new line, comment
 	elif command == '' or command[0] == '#':
 		lib.command_history.pop()
@@ -324,6 +351,7 @@ def print_modules(modules, order_by_date=False):
 	log.attachline(log.Color.purple('-' * maxv + '  ' + '-' * maxm + '  ' + '-' * maxa + '  ' + '-' * 10 + '  ' + '-' * 11))
 	# do some sorting
 	if order_by_date:
+		modules.sort(key=lambda x: x)
 		modules.sort(key=lambda x: lib.modules[x].date, reverse=True)
 	else:
 		modules.sort(key=lambda x: x)
@@ -435,7 +463,8 @@ def print_help():
 		('history', 'show command history'),
 		('module_history', 'show history of selected modules'),
 		('kb', 'show the Knowledge Base'),
-		('jobs', 'show jobs in background')
+		('jobs', 'show jobs in background'),
+		('authors', 'show information about authors'),
 		('# comment', 'comment (nothing will happen)'),
 	]
 	maxc = max([7] + [len(x) for x, y in commands])

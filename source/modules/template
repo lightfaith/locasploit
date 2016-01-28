@@ -13,9 +13,9 @@ class Module(GenericModule):
 			'',
 		]
 		
-		self.date = '2016-01-25'
+		self.date = '2999-12-31'
 		self.license = 'GNU GPLv2'
-		self.version = '1.0'
+		self.version = '0.0'
 		self.tags = [
 			'',
 		]

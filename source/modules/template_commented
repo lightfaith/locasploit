@@ -21,11 +21,11 @@ class Module(GenericModule):
 			'',
 		]
 		# Specify the date in exactly this format (yyyy-mm-dd). This can be used for searching or sorting.
-		self.date = '2016-01-25'
+		self.date = '2999-12-31'
 		# You can define the license of the module here.
 		self.license = 'GNU GPLv2'
 		# If any change is made after the publishing, you must change the version.
-		self.version = '1.0'
+		self.version = '0.0'
 		# Tags are useful for searching. Do not use search keywords and symbols (and, not, or, &, |, !, brackets)
 		self.tags = [
 			'template',
