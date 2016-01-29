@@ -35,7 +35,7 @@ class Module(GenericModule):
 This module is designed to be used as a template for new modules. 
 Tired of the comments? Check the "template" module.
 """
-		# If structures in knowledge base will be accessed, you should specify them here. Modules can be searched based on these fields. Do not use search keywords and symbols and spaces.
+		# If structures in knowledge base will be accessed, you should specify them here. Modules can be searched based on these fields. Do not use search keywords and symbols, number keys and spaces.
 		self.kb_access = [
 			#'USERS',
 		]
