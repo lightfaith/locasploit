@@ -24,10 +24,10 @@ def main():
 			#print commands
 			while len(lib.input_commands)>0:
 				c = lib.input_commands[0]
+				del lib.input_commands[0]
 				log.prompt()
 				log.attachline(c)
 				execute_command(c)
-				del lib.input_commands[0]
 
 	# main program loop
 	while True:
