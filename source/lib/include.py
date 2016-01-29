@@ -56,4 +56,9 @@ def command_exists(c):
 	return len(command('which %s' % (c))) > 0
 
 def positive(string):
-	return string.lower() in ['yes', 'true', '1']
+	return string.lower() in ['y', 'yes', 'true', 't', '1']
+
+def negative(string):
+	return string.lower() in ['n', 'no', 'false', 'f', '0']
+
+
