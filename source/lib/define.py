@@ -13,6 +13,7 @@ input_commands = []
 command_history = []
 module_history = []
 kb = KB()
+main_thread = threading.current_thread()
 scheduler = Scheduler()
 scheduler.start()
 global_parameters = {
