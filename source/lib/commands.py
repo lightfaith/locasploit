@@ -176,12 +176,12 @@ def execute_command(command):
 			else:
 				log.warn('Non-existent parameter %s.' % (parts[0]))
 	
-	# delete global option
-	elif command[:4] == 'delg ' or command[:6] == 'unset ':
+	# delete option
+	elif command[:4] == 'del ' or command[:6] == 'unset ':
 		length = 4 if command[:4] == 'del ' else 6
-		if command[length:] in lib.global_parameters:
-			log.info('Parameter %s = %s unset.' % (command[length:].strip(), lib.active_module.parameters[command[length:]].strip()))
-			del lib.active_module.parameters[command[length:].strip()]
+		if command[length:] in lib.active_module.parameters:
+			log.info('Parameter %s = \'%s\' unset.' % (command[length:].strip(), lib.active_module.parameters[command[length:]].value.strip()))
+			lib.active_module.parameters[command[length:].strip()].value = ''
 		else:
 			log.warn('Parameter %s not in parameters.' % (command[length:].strip()))
 	
@@ -329,7 +329,7 @@ def execute_command(command):
 	
 	# something else
 	else:
-		log.warn('[!] Bad command "%s".' % (command))
+		log.warn('Bad command "%s".' % (command))
 		lib.command_history.pop()
 
 """
