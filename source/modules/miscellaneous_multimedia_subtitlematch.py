@@ -4,7 +4,7 @@ from _generic_plugin import *
 class Module(GenericModule):
 	def __init__(self):
 		self.authors = [
-			Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='badsulog.blogspot.com'),
+			Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
 		]
 		
 		self.name = 'miscellaneous.multimedia.subtitlematch'
