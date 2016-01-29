@@ -275,6 +275,12 @@ def execute_command(command):
 	elif command == 'kb':
 		lib.kb.dump()
 
+	elif command[:6] == 'kb del':
+		if len(command)>7 and command[6] == ' ':
+			lib.kb.delete(command[7:])
+		else:
+			lib.kb.delete()
+
 	elif command[:3] == 'kb ':
 		lib.kb.dump(command[3:])	
 
@@ -302,7 +308,7 @@ def execute_command(command):
 		maxe = max([len(x[1]) for x in everyone] + [5])
 		maxp = max([len(str(everyone[x][0])) for x in everyone] + [7])
 		maxw = max([len(w) for x in everyone for w in everyone[x][1]] + [3])
-		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'PLUGINS', maxw, 'WEB'))
+		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'MODULES', maxw, 'WEB'))
 		log.writeline(log.Color.purple('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw)))
 		# sort by number of plugins, then by name
 		keys = sorted(sorted(everyone.keys(), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
@@ -506,7 +512,9 @@ def print_help():
 		('module_history', 'show history of selected modules'),
 		('kb', 'show the Knowledge Base'),
 		('kb a b', 'show content of KB > a > b'),
+		('kb del a b', 'delete content of KB > a > b'),
 		('jobs', 'show jobs in background'),
+		('jobs kill 1', 'kill background job #1'),
 		('authors', 'show information about authors'),
 		('# comment', 'comment (nothing will happen)'),
 	]
