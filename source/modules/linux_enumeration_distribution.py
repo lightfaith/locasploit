@@ -27,6 +27,7 @@ class Module(GenericModule):
 		self.description = 'This module extracts various info about current distribution from specific files (namely /etc/issue and /etc/*-release).'
 		self.kb_access = [
 			'DISTRIBUTION',
+			'DISTRIBUTION ISSUE',
 		]
 		self.dependencies = {
 
@@ -51,7 +52,7 @@ class Module(GenericModule):
 			if os.access('/etc/issue', os.R_OK):
 				with open('/etc/issue', 'r') as f:
 					result = f.read()
-					lib.kb.add('DISTRIBUTION', 'ISSUE', result)
+					lib.kb.add('DISTRIBUTION ISSUE', result)
 					if not silent:
 						log.ok('/etc/issue:')
 						for x in result.splitlines():
@@ -64,7 +65,7 @@ class Module(GenericModule):
 			for x in release_files:
 				with open('/etc/' + x, 'r') as f:
 					result = f.read()
-					lib.kb.add('DISTRIBUTION', x.upper(), result)
+					lib.kb.add('DISTRIBUTION %s' % (x.upper()), result)
 					if not silent:
 						log.ok('%s:' % x)
 						for l in result.splitlines():

@@ -36,6 +36,13 @@ Specifically, the following commands are issued:
 """
 		self.kb_access = [
 			'KERNEL',
+			'KERNEL PROC_VERSION',
+			'KERNEL UNAME-A',
+			'KERNEL UNAME-MRS',
+			'KERNEL RPM',
+			'KERNEL DMESG_LINUX',
+			'KERNEL VMLINUZ',
+
 		]
 		self.dependencies = {
 
@@ -58,7 +65,7 @@ Specifically, the following commands are issued:
 		if os.access('/proc/version', os.R_OK):
 			with open('/proc/version', 'r') as f:
 				result = f.read()
-				lib.kb.add('KERNEL', 'PROC_VERSION', result)
+				lib.kb.add('KERNEL PROC_VERSION', result)
 				if not silent:
 					log.ok('/proc/version:')
 					for x in result.splitlines():
@@ -69,13 +76,13 @@ Specifically, the following commands are issued:
 		# run uname -a and uname -mrs
 		if command_exists('uname'):
 			unamea = command('uname -a')
-			lib.kb.add('KERNEL', 'UNAME-A', unamea)
+			lib.kb.add('KERNEL UNAME-A', unamea)
 			if not silent:
 				log.ok('uname -a:')
 				for x in unamea.splitlines():
 					log.writeline(x)
 			unamemrs = command('uname -mrs')
-			lib.kb.add('KERNEL', 'UNAME-MRS', unamemrs)
+			lib.kb.add('KERNEL UNAME-MRS', unamemrs)
 			if not silent:
 				log.ok('uname -mrs:')
 				for x in unamemrs.splitlines():
@@ -86,7 +93,7 @@ Specifically, the following commands are issued:
 		# run rpm -q kernel
 		if command_exists('rpm'):
 			rpm = command('rpm -q kernel')
-			lib.kb.add('KERNEL', 'RPM', rpm)
+			lib.kb.add('KERNEL RPM', rpm)
 			if not silent:
 				log.ok('rpm -q kernel:')
 				for x in rpm.splitlines():
@@ -97,7 +104,7 @@ Specifically, the following commands are issued:
 		# run dmesg | grep Linux
 		if command_exists('dmesg'):
 			dm = command('dmesg | grep Linux')
-			lib.kb.add('KERNEL', 'DMESG_LINUX', dm)
+			lib.kb.add('KERNEL DMESG_LINUX', dm)
 			if not silent:
 				log.ok('dmesg | grep Linux:')
 				for x in dm.splitlines():
@@ -109,7 +116,7 @@ Specifically, the following commands are issued:
 		# what vmlinuz?
 		if os.access('/boot', os.R_OK) and os.access('/boot', os.X_OK):
 			vmlinuzes = [x for x in os.listdir('/boot') if x[:8] == 'vmlinuz-']
-			lib.kb.add('KERNEL', 'VMLINUZ', '\n'.join(vmlinuzes))
+			lib.kb.add('KERNEL VMLINUZ', '\n'.join(vmlinuzes))
 			if not silent:
 				log.ok('vmlinuz in /boot/:')
 				for x in vmlinuzes:

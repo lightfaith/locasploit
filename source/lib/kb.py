@@ -7,57 +7,62 @@ class KB:
 		self.kb = {}
 		self.lock = threading.Lock()
 	
-	def add_key(self, key):
-		if key not in self.kb:
+	def add(self, key, data):
+		# split into words if given as a string
+		if type(key) == str:
+			key = key.split(' ')
+		
+		# index of the deepest known keyword (-1 = nowhere)
+		existindex = -1
+		if not self.exists(key[:-1]):
+			# parent does not exist - create dictionaries
 			self.lock.acquire()
-			self.kb[key] = {}
+			for i in range(0, len(key[:-1])):
+				if self.exists(key[:len(key)-i-1]):
+					existindex = i
+					break
+			# existindex should be correct here
+			if existindex == -1: # not found anything => kb itself
+				branch = self.kb
+				existindex = 0 # noted, now create from first...
+			else: # work with the existing branch
+				branch = self.find(key[:existindex])[0]
+
+			# create dictionaries except last one (that will be added as a key)
+			for x in key[existindex:-1]:
+				branch[x] = {}
+				branch = branch[x]
+			
 			self.lock.release()
 
-	def add(self, key, subkey, value):
-		self.add_key(key)
-		self.lock.acquire()
-		self.kb[key][subkey] = value
-		self.lock.release()
+			# now the tree should be ok for addition, try again
+			self.add(key, data)
+			return
 
-	def keys(self):
+		# tree is ok, add it there
 		self.lock.acquire()
-		result = self.kb.keys()
-		self.lock.release()
-		return result
-
-	def subkeys(self, key):
-		self.add_key(key)
-		self.lock.acquire()
-		result = self.kb[key].keys()
-		self.lock.release()
-		return result
-
-	def get(self, key, subkey):
-		self.add_key(key)
-		self.lock.acquire()
-		if subkey in self.kb[key]:
-			result = self.kb[key][subkey]
+		branch = self.find(key[:-1])[0]
+		# add the last key 
+		if type(branch) == dict:
+			branch[key[-1]] = data
+		elif type(branch) == list:
+			branch += data #TODO correct?
+		elif type(branch) == str:
+			branch += data #TODO correct?
+		elif type(branch) == tuple:
+			log.err('You cannot add data into an existing tuple.')
 		else:
-			result = None
+			log.err('Attempt to add structure into one of unsupported type: %s.' % type(branch))
 		self.lock.release()
-		return result
-	
-#	def delete(self, key, subkey):
-#		if key in self.kb:
-#			self.lock.acquire()
-#			if subkey in self.kb[key]:
-#				del self.kb[key][subkey]
-#			if len(self.kb[key]) == 0:
-#				del self.kb[key]
-#			self.lock.release()
-	
+
+
 	def dump(self, query=''):
 		import json
 		keys = [x for x in query.split(' ') if len(x)>0]
 		if len(keys) == 0:
 			log.attachline(json.dumps(self.kb, indent=4))
 		else:
-			result = self.find(keys)
+			result = self.find(keys, parent=False, silent=False)
 			log.attachline(log.Color.purple(' > '.join(keys[:result[1]+1])+':'))
 			log.attachline(json.dumps(result[0], indent=4))
 	
@@ -67,17 +72,19 @@ class KB:
 		if len(keys) == 0:
 			self.kb = {}
 		else:
-			result = self.find(keys, True)
+			result = self.find(keys, parent=True)
 			if result[1]+1<len(keys):
 				#log.info('not found, not deleting...')
 				pass
 			else:
-				print result[0]
 				del result[0][keys[result[1]]]
 				log.info('Entry %s has been deleted.' % ' > '.join(keys[:result[1]+1]))
 		self.lock.release()
 	
-	def find(self, keys, parent=False):
+	def exists(self, keys):
+		return self.find(keys, parent=False, silent=True, boolean=True)
+	
+	def find(self, keys, parent=False, silent=True, boolean=False):
 		i = 0
 		branch = self.kb
 		parentbranch = None
@@ -90,19 +97,31 @@ class KB:
 			elif i == len(keys)-1 and type(branch) == str:
 				tmpbranch = [x for x in branch.splitlines() if keys[i] in x]
 				if len(tmpbranch) == 0:
-					log.err('Cannot find key \'%s\'.' % keys[i])
+					if not silent:
+						log.err('Cannot find key \'%s\'.' % keys[i])
+					if boolean:
+						return False
 					i -= 1
 					break		
-				if parent:
-					return (parentbranch, i)
+				if boolean:
+					return True
 				else:
-					return (tmpbranch, i)
+					if parent:
+						return (parentbranch, i)
+					else:
+						return (tmpbranch, i)
 			else:
-				log.err('Cannot find key \'%s\'.' % keys[i])
+				if not silent:
+					log.err('Cannot find key \'%s\'.' % keys[i])
+				if boolean:
+					return False
 				i -= 1
 				break
-		if parent:
-			return (parentbranch, i)
+		if boolean:
+			return True
 		else:
-			return (branch, i)
+			if parent:
+				return (parentbranch, i)
+			else:
+				return (branch, i)
 
