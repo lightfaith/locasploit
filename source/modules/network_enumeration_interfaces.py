@@ -30,6 +30,7 @@ This module detects local network interfaces and writes them into the Knowledge 
 """
 		self.kb_access = [
 			'NETWORK',
+			'NETWORK INTERFACES',
 		]
 		
 		self.dependencies = {
@@ -79,7 +80,9 @@ This module detects local network interfaces and writes them into the Knowledge 
 						for key in address:
 							log.ok('            %s = %s' % (key, address[key]))
 
-		lib.kb.add('NETWORK', 'INTERFACES', result)
+		#lib.kb.add('NETWORK INTERFACES', result)
+		for x in result:
+			lib.kb.add('NETWORK INTERFACES %s' % (x), result[x])
 		# # # # # # # #
 		return None
 	
