@@ -291,7 +291,7 @@ def execute_command(command):
 		if command[10:].strip().isdigit():
 			lib.scheduler.kill(command[10:].strip())
 		else:
-			print 'cannot kill'
+			log.err('You must specify job ID.')
 
 	elif command == 'authors':
 		everyone = {}

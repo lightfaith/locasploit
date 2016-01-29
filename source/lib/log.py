@@ -43,7 +43,7 @@ def write(string=''):
 
 def writeline(string=''):
 	loglock.acquire()
-	print '    %s'.expandtabs(4) % str(string)
+	print('    %s'.expandtabs(4) % str(string))
 	loglock.release()
 
 def attach(string=''):
@@ -53,27 +53,27 @@ def attach(string=''):
 
 def attachline(string=''):
 	loglock.acquire()
-	print str(string).expandtabs(4)
+	print(str(string).expandtabs(4))
 	loglock.release()
 
 def info(string=''):
 	loglock.acquire()
-	print '%s %s'.expandtabs(4) % (Color.bold(Color.blue('[.]')), string)
+	print('%s %s'.expandtabs(4) % (Color.bold(Color.blue('[.]')), string))
 	loglock.release()
 
 def ok(string=''):
 	loglock.acquire()
-	print '%s %s'.expandtabs(4) % (Color.bold(Color.green('[+]')), string)
+	print('%s %s'.expandtabs(4) % (Color.bold(Color.green('[+]')), string))
 	loglock.release()
 
 def warn(string=''):
 	loglock.acquire()
-	print '%s %s'.expandtabs(4) % (Color.bold(Color.yellow('[!]')), string)
+	print('%s %s'.expandtabs(4) % (Color.bold(Color.yellow('[!]')), string))
 	loglock.release()
 
 def err(string=''):
 	loglock.acquire()
-	print '%s %s'.expandtabs(4) % (Color.bold(Color.red('[-]')), string)
+	print('%s %s'.expandtabs(4) % (Color.bold(Color.red('[-]')), string))
 	loglock.release()
 
 

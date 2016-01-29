@@ -41,7 +41,6 @@ stopper: function returning true or false to stop the sniffing process
             s = PcapReader(offline)
 
     lst = []
-    print 'UIIII'
     if timeout is not None:
         stoptime = time.time()+timeout
     remain = None
