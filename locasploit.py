@@ -14,8 +14,8 @@ args = parser.parse_args()
 
 
 def main():
-	if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
-		log.ok('Already running as %s.' % (lib.global_parameters['ROOT']))
+	if is_admin():
+		log.ok('Administrator privileges already granted.')
 	
 	# input from file?
 	if args.input_file is not None:

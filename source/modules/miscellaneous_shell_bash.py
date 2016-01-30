@@ -53,10 +53,11 @@ This module allows bash command execution.
 			log.err('Invalid PYTHON_VERSION (%s).' % lib.python_version)
 			return
 
-		ends = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
-		end_string = ', '.join(map(log.Color.bold, ends[:-1])) + ' or ' + log.Color.bold(ends[-1])
 		if not silent:
+			ends = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
+			end_string = ', '.join(ends[:-1]) + ' or ' + ends[-1]
 			log.info('Type %s to exit.' % (end_string))
+
 		if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
 			lib.prompt = '  # '
 		else:

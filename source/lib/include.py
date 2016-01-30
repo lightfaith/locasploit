@@ -25,7 +25,6 @@ def load_modules():
 			imp.reload(sys.modules['source.modules.' + m]) # TODO deprecated?
 		else:
 			importlib.import_module('source.modules.' + m)
-
 	#print module_objects
 	for v in lib.module_objects:
 		if v.name in lib.modules:
@@ -61,4 +60,16 @@ def positive(string):
 def negative(string):
 	return string.lower() in ['n', 'no', 'false', 'f', '0']
 
-
+def is_admin():
+	if sys.platform.startswith('linux'):
+		if os.geteuid() == 0:
+			return True
+		return False
+	
+	elif sys.platform.startswith('win'):
+		# can write to C:\Windows\temp?
+		if os.access(os.path.join(os.environ.get('SystemRoot', 'C:\\Windows'), 'temp'), os.W_OK):
+			return True
+		return False
+	else:
+		log.warn('Cannot check root privileges, platform is not fully supported (%s).' % sys.platform)

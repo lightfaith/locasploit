@@ -63,7 +63,7 @@ class KB:
 			log.attachline(json.dumps(self.kb, indent=4))
 		else:
 			result = self.find(keys, parent=False, silent=False)
-			log.attachline(log.Color.purple(' > '.join(keys[:result[1]+1])+':'))
+			log.attachline(' > '.join(keys[:result[1]+1])+':', log.Color.PURPLE)
 			log.attachline(json.dumps(result[0], indent=4))
 	
 	def delete(self, query=''):

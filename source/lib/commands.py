@@ -53,44 +53,44 @@ def execute_command(command):
 					if x not in by_module:
 						by_module.append(x)
 				if len(by_module) > 0:
-					log.attachline(log.Color.purple('By module:'))
+					log.attachline('By module:', log.Color.PURPLE)
 					print_modules(by_module)
 					log.writeline('')
 		
 				by_tag = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].tags]]
 				if len(by_tag) > 0:
-					log.attachline(log.Color.purple('By tags:'))
+					log.attachline('By tags:', log.Color.PURPLE)
 					print_modules(by_tag)
 					log.writeline('')
 		
 				
 				by_parameter = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].parameters]]
 				if len(by_parameter) > 0:
-					log.attachline(log.Color.purple('By parameters:'))
+					log.attachline('By parameters:', log.Color.PURPLE)
 					print_modules(by_parameter)
 					log.writeline('')
 			
 				by_author = [x for x in modules for authors in modules[x].authors if command[7:].lower() in authors.name.lower() or command[7:].lower() in authors.email.lower() or command[7:].lower() in authors.web.lower()]
 				if len(by_author) > 0:
-					log.attachline(log.Color.purple('By authors:'))
+					log.attachline('By authors:', log.Color.PURPLE)
 					print_modules(by_author)
 					log.writeline('')
 				
 				by_kb = [x for x in modules if command[7:].upper() in [y.upper() for y in modules[x].kb_access]]
 				if len(by_kb) > 0:
-					log.attachline(log.Color.purple('By Knowledge Base:'))
+					log.attachline('By Knowledge Base:', log.Color.PURPLE)
 					print_modules(by_kb)
 					log.writeline('')
 				
 				by_dependency = [x for x in modules if len(SearchAbbr(command[7:].lower(), [y.lower() for y in modules[x].dependencies.keys()])) > 0]
 				if len(by_dependency) > 0:
-					log.attachline(log.Color.purple('By dependencies:'))
+					log.attachline('By dependencies:', log.Color.PURPLE)
 					print_modules(by_dependency)
 					log.writeline('')
 
 				by_version = [x for x in modules if command[7:].lower() == modules[x].version.lower()]
 				if len(by_version) > 0:
-					log.attachline(log.Color.purple('By version:'))
+					log.attachline('By version:', log.Color.PURPLE)
 					print_modules(by_version)
 					log.writeline('')
 
@@ -127,7 +127,7 @@ def execute_command(command):
 	elif command == 'getg':
 		maxp = max([4]+[len(x) for x in lib.global_parameters])
 		log.writeline('%-*s  %s' % (maxp, 'NAME', 'VALUE'))
-		log.writeline(log.Color.purple('%s  %s' % ('-' * maxp, '-' * 5)))
+		log.writeline('%s  %s' % ('-' * maxp, '-' * 5), log.Color.PURPLE)
 		for p in lib.global_parameters:
 			log.writeline('%-*s  %s' % (maxp, p, lib.global_parameters[p]))
 
@@ -309,7 +309,7 @@ def execute_command(command):
 		maxp = max([len(str(everyone[x][0])) for x in everyone] + [7])
 		maxw = max([len(w) for x in everyone for w in everyone[x][1]] + [3])
 		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'MODULES', maxw, 'WEB'))
-		log.writeline(log.Color.purple('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw)))
+		log.writeline('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw), log.Color.PURPLE)
 		# sort by number of plugins, then by name
 		keys = sorted(sorted(everyone.keys(), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
 		for a in everyone:
@@ -385,7 +385,7 @@ def print_modules(modules, order_by_date=False):
 	maxm = max([len(m) for m in modules] + [6])
 	maxa = max([len(a.name) for m in modules for a in lib.modules[m].authors] + [7])
 	log.attachline("%*s  %-*s  %-*s  %-10s  %-s" % (maxv, 'VERSION', maxm, 'MODULE', maxa, 'AUTHORS', 'DATE', 'DESCRIPTION'))
-	log.attachline(log.Color.purple('-' * maxv + '  ' + '-' * maxm + '  ' + '-' * maxa + '  ' + '-' * 10 + '  ' + '-' * 11))
+	log.attachline('-' * maxv + '  ' + '-' * maxm + '  ' + '-' * maxa + '  ' + '-' * 10 + '  ' + '-' * 11, log.Color.PURPLE)
 	# do some sorting
 	if order_by_date:
 		modules.sort(key=lambda x: x)
@@ -414,26 +414,30 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 
 	if basics:
 		length = max([0] + [len(x) for x in ['Name', 'Date', 'Version', 'License']])
-		log.attachline(log.Color.purple('%*s: ' % (length, 'Name')) + '%s' % (m.name))
-		log.attachline(log.Color.purple('%*s: ' % (length, 'Date')) + '%s' % (m.date))
-		log.attachline(log.Color.purple('%*s: ' % (length, 'Version')) + '%s' % (m.version))
-		log.attachline(log.Color.purple('%*s: ' % (length, 'License')) + '%s' % (m.license))
+		log.attach('%*s: ' % (length, 'Name'), log.Color.PURPLE) 
+		log.attachline('%s' % (m.name))
+		log.attach('%*s: ' % (length, 'Date'), log.Color.PURPLE) 
+		log.attachline('%s' % (m.date))
+		log.attach('%*s: ' % (length, 'Version'), log.Color.PURPLE)
+		log.attachline('%s' % (m.version))
+		log.attach('%*s: ' % (length, 'License'), log.Color.PURPLE) 
+		log.attachline('%s' % (m.license))
 		log.attachline()
 	
 	if authors:
-		log.attachline(log.Color.purple('Authors:'))
+		log.attachline('Authors:', log.Color.PURPLE)
 		for a in m.authors:
 			log.writeline('%s %s %s' % (a.name, '<%s>' % (a.email) if len(a.email) > 0 else '', '{%s}' % (a.web) if len(a.web) > 0 else ''))
 		log.attachline()
 
 	if options and len(m.parameters) > 0:
-		log.attachline(log.Color.purple('Parameters:'))
+		log.attachline('Parameters:', log.Color.PURPLE)
 		params = m.parameters.keys() if not missing else [p for p in m.parameters.keys() if m.parameters[p].value == '']
 		maxn = max([4]+[len(p) for p in params])
 		maxv = max([5]+[len(m.parameters[p].value) for p in params])
 
 		log.writeline('%-*s  %-*s  %s  %s' %(maxn, 'NAME', maxv, 'VALUE', 'MANDATORY', 'DESCRIPTION'))
-		log.writeline(log.Color.purple('%s  %s  %s  %s' %('-' * maxn, '-' * maxv, '-' * 9, '-' * 11)))
+		log.writeline('%s  %s  %s  %s' %('-' * maxn, '-' * maxv, '-' * 9, '-' * 11), log.Color.PURPLE)
 		# sort by mandatory, then by name
 		keys = sorted(sorted(params, key = lambda y: y), key = lambda x: m.parameters[x].mandatory, reverse=True)
 		for p in keys:
@@ -441,18 +445,18 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.writeline()
 	
 	if description:
-		log.attachline(log.Color.purple('Description:'))
+		log.attachline('Description:', log.Color.PURPLE)
 		log.attachline(m.description)
 		log.writeline()
 
 	if references and len(m.references)>0:
-		log.attachline(log.Color.purple('References:'))
+		log.attachline('References:', log.Color.PURPLE)
 		for r in m.references:
 			log.writeline(r)
 		log.writeline()
 	
 	if tags and len(m.tags) > 0:
-		log.attachline(log.Color.purple('Tags:'))
+		log.attachline('Tags:', log.Color.PURPLE)
 		for i in range(0, len(m.tags)):
 			if i == 0:
 				log.write('%s' % m.tags[i])
@@ -461,22 +465,22 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.writeline('\n')
 		
 	if kb and len(m.kb_access) > 0:
-		log.attachline(log.Color.purple('Knowledge Base:'))
+		log.attachline('Knowledge Base:', log.Color.PURPLE)
 		for k in m.kb_access:
 			log.writeline(k)
 		log.writeline()
 
 	if dependencies and len(m.dependencies) > 0:
-		log.attachline(log.Color.purple('Module dependencies:'))
+		log.attachline('Module dependencies:', log.Color.PURPLE)
 		maxd = max([6] + [len(d) for d in m.dependencies])
 		log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
-		log.writeline(log.Color.purple('%s  %s' % ('-' * maxd, '-' * 7)))
+		log.writeline('%s  %s' % ('-' * maxd, '-' * 7), log.Color.PURPLE)
 		for d in m.dependencies:
 			log.writeline('%-*s  %s  ' % (maxd, d, m.dependencies[d]))
 		log.writeline()
 
 	if changelog and len(m.changelog.strip()) > 0:
-		log.attachline(log.Color.purple('Changelog:'))
+		log.attachline('Changelog:', log.Color.PURPLE)
 		log.attachline(m.changelog)
 		log.writeline()
 	
@@ -520,6 +524,6 @@ def print_help():
 	]
 	maxc = max([7] + [len(x) for x, y in commands])
 	log.writeline('%-*s  %s' % (maxc, 'COMMAND', 'DESCRIPTION'))
-	log.writeline(log.Color.purple('%-s  %s' % ('-' * maxc, '-' * 11)))
+	log.writeline('%-s  %s' % ('-' * maxc, '-' * 11), log.Color.PURPLE)
 	for c in commands:
 		log.writeline('%-*s  %s' % (maxc, c[0], c[1]))

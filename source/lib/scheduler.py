@@ -55,13 +55,12 @@ class Scheduler(threading.Thread):
 		self.lock.release()
 
 	def newid(self):
+		# only called from add() => lock in place
 		result = 1
-		#self.lock.acquire()
 		while True:
 			if not self.jobs.has_key(result):
 				break
 			result += 1
-		#self.lock.release()
 		return result
 	
 	def show(self):
@@ -74,7 +73,7 @@ class Scheduler(threading.Thread):
 		maxto = max([len(self.jobs[x].timeout) for x in self.jobs if self.jobs[x].timeout is not None] + [7])
 		
 		log.writeline('%*s  %-*s  %-*s  %-*s' % (maxi, 'ID', maxn, 'NAME', maxt, 'TIME', maxto, 'TIMEOUT'))
-		log.writeline(log.Color.purple('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt + '  ' + '-' * maxto))
+		log.writeline('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt + '  ' + '-' * maxto, log.Color.PURPLE)
 		keys = sorted(self.jobs.keys())
 		for i in range(0, len(keys)):
 			x = keys[i]
@@ -82,7 +81,9 @@ class Scheduler(threading.Thread):
 		self.lock.release()
 
 	def kill(self, jid):
+		self.lock.acquire()
 		if int(jid) in self.jobs:
 			self.jobs[int(jid)].job.stop()
+		self.lock.release()
 
 
