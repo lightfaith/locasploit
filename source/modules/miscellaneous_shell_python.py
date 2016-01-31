@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from _generic_plugin import *
+#!/usr/bin/env python3
+from source.modules._generic_module import *
 
 class Module(GenericModule):
 	def __init__(self):

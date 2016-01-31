@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from _generic_plugin import *
+#!/usr/bin/env python3
+from source.modules._generic_module import *
 
 # File should be named according to its name (it is not mandatory, but it is good for clarity). It must have a .py extension.
 

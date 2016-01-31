@@ -1,5 +1,7 @@
-#!/usr/bin/env python
-import log, threading
+#!/usr/bin/env python33
+import threading
+import source.libs.log as log
+import source.libs.define as lib
 
 class KB:
 	# now a dictionary, later maybe some database
@@ -60,7 +62,8 @@ class KB:
 		import json
 		keys = [x for x in query.split(' ') if len(x)>0]
 		if len(keys) == 0:
-			log.attachline(json.dumps(self.kb, indent=4))
+			#log.attachline(json.dumps(self.kb, indent=4))
+			KB.getstructure(self.kb)
 		else:
 			result = self.find(keys, parent=False, silent=False)
 			log.attachline(' > '.join(keys[:result[1]+1])+':', log.Color.PURPLE)
@@ -90,7 +93,7 @@ class KB:
 		parentbranch = None
 		for i in range(0, len(keys)):
 			parentbranch = branch
-			if type(branch) == dict and branch.has_key(keys[i]):
+			if type(branch) == dict and keys[i] in branch:
 				branch = branch[keys[i]]
 			elif (type(branch) == list or type(branch) == tuple) and keys[i].isdigit() and int(keys[i])<len(branch):
 				branch = branch[int(keys[i])]
@@ -125,3 +128,27 @@ class KB:
 			else:
 				return (branch, i)
 
+
+	@staticmethod
+	def getstructure(data, tab = 0):
+		if type(data) is dict:
+			log.attachline(' '*tab + '{')
+			for key in data:
+				log.attachline(' '*tab + '  ' + key + ':')
+				KB.getstructure(data[key], tab+4)
+			log.attachline(' '*tab + '}')
+		elif type(data) is list and len(data) > 0:
+			log.attachline(' '*tab + '[')
+			KB.getstructure(data[0], tab+4)
+			log.attachline(' '*tab + '  ...')
+			log.attachline(' '*tab + ']')
+		elif type(data) is str:
+			for line in data.splitlines():
+				log.attachline(' '*tab + line)
+		elif type(data) is bytes:
+			data = data.decode('utf-8')
+			for line in data.splitlines():
+				log.attachline(' '*tab + line)
+
+
+lib.kb = KB()

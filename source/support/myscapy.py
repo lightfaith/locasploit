@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from source.lib.include import *
+from source.libs.include import *
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 
@@ -52,7 +52,7 @@ stopper: function returning true or false to stop the sniffing process
                 remain = stoptime-time.time()
                 if remain <= 0:
                     break
-            sel = select([s],[],[],remain)
+            sel = select.select([s],[],[],remain)
             if s in sel[0]:
                 p = s.recv(MTU)
                 if p is None:
@@ -65,7 +65,7 @@ stopper: function returning true or false to stop the sniffing process
                 if prn:
                     r = prn(p)
                     if r is not None:
-                        print r
+                        print(r)
                 if stop_filter and stop_filter(p):
                     break
                 if count > 0 and c >= count:

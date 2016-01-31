@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from include import *
+#!/usr/bin/env python33
+from source.libs.include import *
 
 class Author():
 	def __init__(self, name='', email='', web=''):

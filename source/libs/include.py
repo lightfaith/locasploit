@@ -1,7 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python33
 import os, sys, re, time, importlib, imp, subprocess, threading, traceback, signal, logging
-import define as lib
-import log
+import source.libs.define as lib
+import source.libs.kb
+import source.libs.scheduler
+import source.libs.log as log
 
 def exit_program(signal, frame):
 	log.attachline()
@@ -34,14 +36,6 @@ def load_modules():
 	#log.writeline(lib.modules)
 	log.info('%d modules loaded.' % (len(lib.modules)))
 
-def show_time(time):
-	if type(time) != float:
-		return '/'
-	hours = time / 3600
-	time = time % 3600
-	minutes = time / 60
-	time = time % 60
-	return '%d:%02d:%06.3f' % (hours, minutes, time)
 
 def command(provided_command, value=False, stdout=True):
 	sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

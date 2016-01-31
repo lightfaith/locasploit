@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from source.lib.include import *
-from source.lib.parameters import *
-from source.lib.author import *
+from source.libs.include import *
+from source.libs.parameters import *
+from source.libs.author import *
 
 kb = lib.kb
 

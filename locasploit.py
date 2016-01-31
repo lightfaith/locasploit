@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys, importlib, re, argparse
-from source.lib.define import *
+from source.libs.define import *
 #import source.lib.define as lib
-from source.lib.parameters import *
-from source.lib.commands import *
-from source.lib.include import *
-import source.lib.log as log
+from source.libs.parameters import *
+from source.libs.commands import *
+from source.libs.include import *
+import source.libs.log as log
 
 
 parser = argparse.ArgumentParser(prog='locasploit', description='Local enumeration and exploitation framework.')
@@ -32,7 +32,14 @@ def main():
 	# main program loop
 	while True:
 		log.prompt()
-		command = raw_input()
+		if lib.python_version[0] == '2':
+			func = raw_input
+		elif lib.python_version[0] == '3':
+			func = input
+		else:
+			log.err('Undefined python version (%s).' % lib.python_version)
+			break
+		command = func()
 		execute_command(command)
 	# end of main program loop
 

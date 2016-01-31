@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-from include import *
+#!/usr/bin/env python3
+from source.libs.include import *
 
 class Node:
 	pass
@@ -55,7 +55,7 @@ def Search(expression):
 	depth = 0
 	nodes = []
 	operators = [] # determined by priority (mod 4 gives index in priority list)
-	expression = filter(None, [x.strip() for x in re.split('([!|& \(\)<>=])', expression)])
+	expression = list(filter(None, [x.strip() for x in re.split('([!|& \(\)<>=])', expression)]))
 	for x in expression:
 		# first normalize operators (&&, &, and) ...
 		if x.lower() in ['&&', 'and']:
@@ -152,7 +152,7 @@ def SearchKeyword(keyword, moduleonly=False):
 		by_kb = []
 		by_dependency = []
 		by_version = []
-		by_module = SearchAbbr(keyword.lower(), [x.lower() for x in modules.keys()]) + [x for x in modules if keyword.lower() in x.lower()]
+		by_module = SearchAbbr(keyword.lower(), [x.lower() for x in list(modules)]) + [x for x in modules if keyword.lower() in x.lower()]
 
 		if not moduleonly:
 			# in tags
@@ -168,7 +168,7 @@ def SearchKeyword(keyword, moduleonly=False):
 			by_kb = [x for x in modules if keyword.upper() in [y.upper() for y in modules[x].kb_access]]
 
 			# in dependencies (or abbreviations)
-			by_dependency = [x for x in modules if len(SearchAbbr(keyword.lower(), [y.lower() for y in modules[x].dependencies.keys()])) > 0]
+			by_dependency = [x for x in modules if len(SearchAbbr(keyword.lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
 
 			# in version
 			by_version = [x for x in modules if keyword.lower() == modules[x].version.lower()]
@@ -181,11 +181,11 @@ def SearchKeyword(keyword, moduleonly=False):
 		return total
 
 def SearchAbbr(keyword, data):
-	ref_parts = filter(None, keyword.split('.'))
+	ref_parts = list(filter(None, keyword.split('.')))
 	parts = {}
 	# select all modules with more or equal parts than the searched expression
 	for i in data:
-		p = filter(None, i.split('.'))
+		p = list(filter(None, i.split('.')))
 		if len(ref_parts) <= len(p): 
 			parts[i]=p
 	
@@ -198,5 +198,5 @@ def SearchAbbr(keyword, data):
 				break
 	for p in toremove:
 		del parts[p]
-	return parts.keys()
+	return list(parts)
 

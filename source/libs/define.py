@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-import os, threading
-from kb import *
-from scheduler import *
+#!/usr/bin/env python3
+import os, sys, threading
+#from source.libs.kb import *
+#from source.libs.scheduler import *
 
 appname = 'Locasploit'
-python_version = '2.7.9' # TODO determine on the fly
+python_version = '.'.join(map(str, sys.version_info[:3]))
 prompt = ' >  '
 module_objects = []
 modules = {}
@@ -12,10 +12,14 @@ active_module = None
 input_commands = []
 command_history = []
 module_history = []
-kb = KB()
+#kb = KB()
+if 'kb' not in vars():
+	kb = None
 main_thread = threading.current_thread()
-scheduler = Scheduler()
-scheduler.start()
+#scheduler = Scheduler()
+#scheduler.start()
+if 'scheduler' not in vars():
+	scheduler = None
 
 if sys.platform.startswith('linux'):
 	import pwd
@@ -24,7 +28,7 @@ if sys.platform.startswith('linux'):
 		#'HOME': pwd.getpwuid(os.getuid())[5],
 		#'SHELL': pwd.getpwuid(os.getuid())[6], 
 		'USER': os.environ['SUDO_USER'] if 'SUDO_USER' in os.environ 
-				else os.environ['USERNAME'], # takes SUID into consideration
+				else os.environ['USER'],
 		'HOME': os.environ['HOME'],
 		'SHELL': os.environ['SHELL'],
 		'ENVPATH': os.environ['PATH'],

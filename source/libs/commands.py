@@ -1,8 +1,8 @@
-#!usr/bin/env python
-from include import *
-import author
-from search import *
-import log
+#!usr/bin/env python3
+from source.libs.include import *
+import source.libs.author
+from source.libs.search import *
+import source.libs.log
 
 def execute_command(command):
 	command = command.strip()
@@ -24,11 +24,11 @@ def execute_command(command):
 
 	# list modules
 	elif command in ['list', 'ls']:
-		print_modules(lib.modules.keys())
+		print_modules(list(lib.modules))
 	
 	# list modules sorted by date
 	elif command in ['list date', 'ls date']:
-		print_modules(lib.modules.keys(), order_by_date=True)
+		print_modules(list(lib.modules), order_by_date=True)
 	
 	# module search
 	elif command[:7] == 'search ':
@@ -47,7 +47,7 @@ def execute_command(command):
 			else: # not a year, an expression
 				modules = lib.modules
 				
-				by_module_tmp = SearchAbbr(command[7:].lower(), [x.lower() for x in modules.keys()]) + [x for x in modules if command[7:].lower() in x.lower()]
+				by_module_tmp = SearchAbbr(command[7:].lower(), [x.lower() for x in list(modules)]) + [x for x in modules if command[7:].lower() in x.lower()]
 				by_module = []
 				for x in by_module_tmp:
 					if x not in by_module:
@@ -82,7 +82,7 @@ def execute_command(command):
 					print_modules(by_kb)
 					log.writeline('')
 				
-				by_dependency = [x for x in modules if len(SearchAbbr(command[7:].lower(), [y.lower() for y in modules[x].dependencies.keys()])) > 0]
+				by_dependency = [x for x in modules if len(SearchAbbr(command[7:].lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
 				if len(by_dependency) > 0:
 					log.attachline('By dependencies:', log.Color.PURPLE)
 					print_modules(by_dependency)
@@ -198,7 +198,7 @@ def execute_command(command):
 			start = time.time()
 			m.Check()
 			end = time.time()
-			log.info('Module %s has been checked in %s.' % (m.name, show_time(end-start)))
+			log.info('Module %s has been checked in %s.' % (m.name, log.show_time(end-start)))
 	
 	# run, check if module is not None and all arguments are set
 	elif command in ['run', 'execute']:
@@ -214,7 +214,7 @@ def execute_command(command):
 			for p in m.parameters:
 				if m.parameters[p].kb:
 					parts = m.parameters[p].value.split('.')
-					if len(parts) == 1 and parts[0] not in lib.kb.keys():
+					if len(parts) == 1 and parts[0] not in list(lib.kb.keys):
 						kb_dep_ok = False
 						log.err('Key %s is not present in the Knowledge Base.' % parts[0])
 					elif len(parts) == 2 and parts[1] not in lib.kb.subkeys(parts[0]):
@@ -237,7 +237,7 @@ def execute_command(command):
 					job = m.Run()
 					if job is None: # no thread created
 						end = time.time()
-						log.info('Module %s has terminated (%s).' % (m.name, show_time(end-start)))						
+						log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
 						# flush stdin (if not from file!)
 						if len(lib.input_commands) == 0:
 							try:
@@ -251,7 +251,7 @@ def execute_command(command):
 								log.err(sys.exc_info()[1])
 
 					else: # thread will run in the background
-						if lib.active_module.parameters.has_key('TIMEOUT'):
+						if 'TIMEOUT' in lib.active_module.parameters:
 							lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
 						else:
 							lib.scheduler.add(m.name, start, job)
@@ -297,7 +297,7 @@ def execute_command(command):
 		everyone = {}
 		for m in lib.modules:
 			for a in lib.modules[m].authors:
-				if everyone.has_key((a.name, a.email)):
+				if (a.name, a.email) in everyone:
 					everyone[(a.name, a.email)][0] += 1
 					if a.web not in everyone[(a.name, a.email)][1]:
 						everyone[(a.name, a.email)][1].append(a.web)
@@ -311,7 +311,7 @@ def execute_command(command):
 		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'MODULES', maxw, 'WEB'))
 		log.writeline('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw), log.Color.PURPLE)
 		# sort by number of plugins, then by name
-		keys = sorted(sorted(everyone.keys(), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
+		keys = sorted(sorted(list(everyone), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
 		for a in everyone:
 			wcounter = 0
 			for w in everyone[a][1]:
@@ -388,12 +388,16 @@ def print_modules(modules, order_by_date=False):
 	log.attachline('-' * maxv + '  ' + '-' * maxm + '  ' + '-' * maxa + '  ' + '-' * 10 + '  ' + '-' * 11, log.Color.PURPLE)
 	# do some sorting
 	if order_by_date:
-		modules.sort(key=lambda x: x)
-		modules.sort(key=lambda x: lib.modules[x].date, reverse=True)
+		#modules.sort(key=lambda x: x)
+		#modules.sort(key=lambda x: lib.modules[x].date, reverse=True)
+		keys = sorted(sorted(list(modules), key=lambda x: x), key=lambda x: lib.modules[x].date, reverse=True)
 	else:
-		modules.sort(key=lambda x: x)
+		#modules.sort(key=lambda x: x)
+		keys = sorted(list(modules), key=lambda x: x)
+		
 	# print rows
-	for m in modules:
+	#for m in modules:
+	for m in keys:
 		acounter=0 # if more authors, do not print other cells over and over
 		for a in lib.modules[m].authors:
 			if acounter == 0:
@@ -432,7 +436,7 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 
 	if options and len(m.parameters) > 0:
 		log.attachline('Parameters:', log.Color.PURPLE)
-		params = m.parameters.keys() if not missing else [p for p in m.parameters.keys() if m.parameters[p].value == '']
+		params = list(m.parameters) if not missing else [p for p in list(m.parameters) if m.parameters[p].value == '']
 		maxn = max([4]+[len(p) for p in params])
 		maxv = max([5]+[len(m.parameters[p].value) for p in params])
 

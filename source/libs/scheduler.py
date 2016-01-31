@@ -1,6 +1,8 @@
-#!/usr/bin/env python
-import threading
-from include import *
+#!/usr/bin/env python3
+import threading, time
+#from source.libs.include import *
+import source.libs.define as lib
+import source.libs.log as log
 
 class Job:
 	def __init__(self, name, start, job, timeout=None):
@@ -29,7 +31,7 @@ class Scheduler(threading.Thread):
 			for x in todel: # remove them
 				s = self.jobs[x]
 				end = time.time()
-				log.info('Background job %d (%s) has terminated (%s).' % (x, s.name, show_time(end-s.start)))
+				log.info('Background job %d (%s) has terminated (%s).' % (x, s.name, log.show_time(end-s.start)))
 				del self.jobs[x]
 
 			self.lock.release()
@@ -58,7 +60,7 @@ class Scheduler(threading.Thread):
 		# only called from add() => lock in place
 		result = 1
 		while True:
-			if not self.jobs.has_key(result):
+			if result not in self.jobs:
 				break
 			result += 1
 		return result
@@ -68,13 +70,13 @@ class Scheduler(threading.Thread):
 		self.lock.acquire()
 		maxi = max([len(str(x)) for x in self.jobs] + [2])
 		maxn = max([len(self.jobs[x].name) for x in self.jobs] + [4])
-		times = [show_time(now - self.jobs[x].start) for x in self.jobs]
+		times = [log.show_time(now - self.jobs[x].start) for x in self.jobs]
 		maxt = max([len(t) for t in times] + [4])
 		maxto = max([len(self.jobs[x].timeout) for x in self.jobs if self.jobs[x].timeout is not None] + [7])
 		
 		log.writeline('%*s  %-*s  %-*s  %-*s' % (maxi, 'ID', maxn, 'NAME', maxt, 'TIME', maxto, 'TIMEOUT'))
 		log.writeline('-' * maxi + '  ' + '-' * maxn + '  ' + '-' * maxt + '  ' + '-' * maxto, log.Color.PURPLE)
-		keys = sorted(self.jobs.keys())
+		keys = sorted(list(self.jobs))
 		for i in range(0, len(keys)):
 			x = keys[i]
 			log.writeline('%*s  %-*s  %*s  %-*s' % (maxi, x, maxn, self.jobs[x].name, maxt, times[i], maxto, '' if self.jobs[x].timeout is None else self.jobs[x].timeout))
@@ -87,3 +89,5 @@ class Scheduler(threading.Thread):
 		self.lock.release()
 
 
+lib.scheduler = Scheduler()
+lib.scheduler.start()
