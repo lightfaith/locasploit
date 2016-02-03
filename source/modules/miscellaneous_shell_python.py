@@ -69,18 +69,15 @@ This module uses Python's exec() function to execute any commands. These will ru
 			# check command queue
 			if len(lib.commands) > 0:
 				line = lib.commands[0]
-				if not silent:
-					log.attachline(line)
 				del lib.commands[0]
-				if line in ends:
-					break
-				try:
-					exec(line)
-				except:
-					log.err(sys.exc_info()[1])
-
 			else:
 				line = func()
+			if line in ends:
+				break
+			try:
+				exec(line)
+			except:
+				log.err(ss.exc_info()[1])
 				
 		lib.prompt = old_prompt
 		# # # # # # # #
