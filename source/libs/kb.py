@@ -152,7 +152,7 @@ class KB:
 		# dictionary
 		if type(data) is dict:
 			log.attachline(' ' * tab + '{')
-			for key in sorted(data, key=lambda x: [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', x)]):
+			for key in natural_sort(data):
 				log.attachline(' ' * tab + '  ' + key + ':')
 				KB.get_structure(data[key], tab + 4)
 			log.attachline(' ' * tab + '}')
@@ -170,6 +170,9 @@ class KB:
 			data = data.decode('utf-8')
 			for line in data.splitlines():
 				log.attachline(' ' * tab + line)
+
+def natural_sort(data):
+	return sorted(data, key=lambda x: [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', x)])
 
 # initialize global variable
 lib.kb = KB()
