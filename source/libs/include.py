@@ -19,6 +19,7 @@ def exit_program(signal, frame):
 # run exit program on SIGINT
 signal.signal(signal.SIGINT, exit_program)
 
+
 def load_modules():
 	""" Import modules from source/modules/ folder """
 	lib.module_objects = []
@@ -41,6 +42,21 @@ def load_modules():
 	log.info('%d modules loaded.' % (len(lib.modules)))
 
 
+
+def load_dicts():
+	lib.dicts = {}
+	dicts = [x for x in os.listdir('dictionaries') if x[-4:].lower() in ['.txt', '.dic']]
+	for d in dicts:
+		lines = []
+		path = os.path.join('dictionaries', d)
+		if os.access(path, os.R_OK):
+			with open(path, 'r') as f:
+				lines = [x.strip() for x in f.readlines()]
+				lib.dicts[d[:-4].upper()] = lines
+	log.info('%d dictionaries loaded.' % (len(lib.dicts)))
+
+
+
 def command(provided_command, value=False, stdout=True):
 	""" Run a given command """
 	sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -48,6 +64,8 @@ def command(provided_command, value=False, stdout=True):
 		return sp.stdout.read()
 	if value:
 		return sp.returncode
+
+
 
 def command_exists(c):
 	""" Check if a given command exists """
@@ -59,13 +77,22 @@ def command_exists(c):
 		log.warn('Cannot determine \'%s\' existence.' % c)
 		return False
 
+
+
+
 def positive(string):
 	""" Check if parameter represents positive state """
 	return string.lower() in ['y', 'yes', 'true', 't', '1']
 
+
+
+
 def negative(string):
 	""" Check if parameter represents negative state """
 	return string.lower() in ['n', 'no', 'false', 'f', '0']
+
+
+
 
 def is_admin():
 	""" Check if the actual user has administrative privileges """
@@ -83,3 +110,9 @@ def is_admin():
 		return False
 	else:
 		log.warn('Cannot check root privileges, platform is not fully supported (%s).' % sys.platform)
+
+
+
+
+def natural_sort(data):
+	return sorted(data, key=lambda x: [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', x)])

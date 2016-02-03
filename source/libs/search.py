@@ -169,7 +169,7 @@ def search_keyword(keyword, moduleonly=False):
 			by_kb = [x for x in modules if keyword.upper() in [y.upper() for y in modules[x].kb_access]]
 
 			# in dependencies (or abbreviations)
-			by_dependency = [x for x in modules if len(SearchAbbr(keyword.lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
+			by_dependency = [x for x in modules if len(search_abbr(keyword.lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
 
 			# in version
 			by_version = [x for x in modules if keyword.lower() == modules[x].version.lower()]

@@ -7,12 +7,16 @@ prompt = ' >  '                                           # current prompt strin
 module_objects = []                                       # temporary list for module loading
 modules = {}                                              # dictionary of all modules
 active_module = None                                      # currently active module
-from_input_file = False                                   # commands provided from input file
+#from_input_file = False                                   # commands provided from input file
 commands = []                                             # list of commands to execute
 command_history = []                                      # history of commands
 module_history = []                                       # history of selected modules
+
+dicts = {}                                                # dictionaries (for crypto, cracking etc.)
 if 'kb' not in vars():
 	kb = None                                             # knowledge base, initialized in kb.py
+
+
 main_thread = threading.current_thread()
 if 'scheduler' not in vars():
 	scheduler = None                                      # thread scheduler, initialized in scheduler.py

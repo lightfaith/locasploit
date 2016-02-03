@@ -220,61 +220,40 @@ def execute_command(command):
 				for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
 					log.warn('    %s' % x)
 		else:
-##			kb_dep_ok = True # all kb entries and dependencies are accessible
-##			for p in m.parameters:
-##				# check KB if all kb defined parameters are there
-##				if m.parameters[p].kb and m.parameters[p].value != '':
-##					parts = m.parameters[p].value.split(' ')
-##					if not lib.kb.exists(parts):
-##						kb_dep_ok = False
-##						log.err('Key %s is not present in the Knowledge Base.' % parts[0])
-##				# check if all dependency modules are there
-##				if m.parameters[p].dependency:
-##					matches = search_keyword(m.parameters[p].value)
-##					if len(matches) == 0:
-##						kb_dep_ok = False
-##						log.err('Module %s does not exist.' % m.parameters[p].value)
-##					elif len(matches) > 1:
-##						kb_dep_ok = False
-##						log.err('Ambiguous module name: %s.', m.parameters[p].value)
-##			
-##			if kb_dep_ok:
-			if True:
-				# run the module
-				log.info('Module %s has started.' % (m.name))
-				try:
-					start = time.time()
-					job = m.run() # result = None or thread
-					if job is None: 
-						# no thread running
-						end = time.time()
-						log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
-						
-						# flush stdin 
-						if len(lib.commands) == 0 or True:
-							try:
-								import termios
-								termios.tcflush(sys.stdin, termios.TCIFLUSH)
-							except ImportError:
-								print('X')
-								import msvcrt
-								while msvcrt.kbhit():
-									msvcrt.getch()
-							except:
-								print('Y')
-								log.err(sys.exc_info()[1])
-
+			# run the module
+			log.info('Module %s has started.' % (m.name))
+			try:
+				start = time.time()
+				job = m.run() # result = None or thread
+				if job is None: 
+					# no thread running
+					end = time.time()
+					log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
+					
+					# flush stdin 
+					if len(lib.commands) == 0 or True:
+						try:
+							import termios
+							termios.tcflush(sys.stdin, termios.TCIFLUSH)
+						except ImportError:
+							print('X')
+							import msvcrt
+							while msvcrt.kbhit():
+								msvcrt.getch()
+						except:
+							print('Y')
+							log.err(sys.exc_info()[1])
 					else: 
 						# thread returned, will run in the background
 						if 'TIMEOUT' in lib.active_module.parameters:
 							lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
 						else:
 							lib.scheduler.add(m.name, start, job)
-						
-				except:
-					print('Z')
-					traceback.format_exc()
-					log.err(sys.exc_info()[1])
+					
+			except:
+				print('Z')
+				traceback.format_exc()
+				log.err(sys.exc_info()[1])
 			
 	# print command history
 	elif command == 'history':
@@ -338,9 +317,27 @@ def execute_command(command):
 				if wcounter == 0:
 					log.writeline('%*s  %-*s  %*d  %-*s' % (maxn, a[0], maxe, a[1], maxp, everyone[a][0], maxw, w))
 				else:
-					log.writeline('%*s  %-*s  %*d  %*s' % (maxn, '', maxe, '', maxp, '', maxw, w))
+					log.writeline('%*s  %-*s  %*s  %*s' % (maxn, '', maxe, '', maxp, '', maxw, w))
 
 				wcounter += 1
+
+	# dictionaries
+	elif command in ['dict', 'dicts', 'dictionary', 'dictionaries']:
+		if len(lib.dicts) > 0:
+			# compute column width
+			maxd = max([len(x) for x in lib.dicts] + [10])
+			maxn = max([len(str(len(lib.dicts[x]))) for x in lib.dicts] + [5])
+			
+			# print header
+			log.writeline('%*s  %-*s' % (maxd, 'DICTIONARY', maxn, 'WORDS'))
+			log.writeline('%s  %s' % ('-' * maxd, '-' * maxn), log.Color.PURPLE)
+			
+			# print entries
+			keys = sorted(list(lib.dicts))
+			for k in keys:
+				log.writeline('%*s  %d' % (maxd, k, len(lib.dicts[k])))
+			log.writeline()
+
 
 	# empty, new line, comment
 	elif command == '' or command[0] == '#':

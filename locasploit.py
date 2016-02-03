@@ -60,5 +60,6 @@ def main():
 # program starts here
 #
 load_modules()
+load_dicts()
 main()
 
