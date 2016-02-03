@@ -27,19 +27,19 @@ class Module(GenericModule):
 This module can alter the time information in .srt files to provide the best experience. It can deal with delays and incorrect speeds in defined intervals. 
 
 User must define:
-	type of problem (delay, speed)
-	file format
-	input file
-	output file
-	time of sentence heard (in the same form as seen in input file)
-	time of sentence seen in subtitles (in the same form as seen in input file)
-	start of the bad part (in the same form as seen in input file, undefined = start)
-	end of the bad part (in the same form as seen in input file, undefined = end)
+    type of problem (delay, speed)
+    file format
+    input file
+    output file
+    time of sentence heard (in the same form as seen in input file)
+    time of sentence seen in subtitles (in the same form as seen in input file)
+    start of the bad part (in the same form as seen in input file, undefined = start)
+    end of the bad part (in the same form as seen in input file, undefined = end)
 
 If subtitle speed is incorrect, the delay will deteriorate through time. For the best precision, pick the sentence from the end of a movie.
 
 Supported formats:
-	.srt
+    .srt
 """
 		self.kb_access = [
 		]
