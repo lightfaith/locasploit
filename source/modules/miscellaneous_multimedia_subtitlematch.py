@@ -50,11 +50,11 @@ Supported formats:
 1.0: .srt support added
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 			'TYPE': Parameter(value='', mandatory=True, description='0 = offset, 1 = speed'),
 			'FORMAT': Parameter(value='srt', mandatory=True, description='File format'),
 			'INPUTFILE': Parameter(value='', mandatory=True, description='Input file'),
@@ -65,10 +65,13 @@ Supported formats:
 			'END': Parameter(value='', mandatory=False, description='End of the bad part'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		# check type
@@ -156,7 +159,8 @@ Supported formats:
 	
 	
 	def getms(self, p):
-		if(self.parameters['FORMAT'].value) == 'srt':
+		# get number of miliseconds from time in specified format
+		if(self.parameters['FORMAT'].value) == 'srt': # hh:mm:ss,sss
 			return int(p[-3:]) + int(p[-6:-4])*1000 + int(p[3:5])*60000 + int(p[:2])*3600000 
 		else:
 			return 0

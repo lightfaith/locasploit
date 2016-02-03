@@ -29,19 +29,22 @@ class Module(GenericModule):
 		self.changelog = """
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='yes', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='yes', mandatory=True, description='Suppress the output'),
 			'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
 			'TIMEOUT' : Parameter(value='60', mandatory=True, description='Number of seconds to run'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		if not positive(self.parameters['BACKGROUND'].value) and not negative(self.parameters['BACKGROUND'].value):
 			log.err('Bad %s value: %s.', 'BACKGROUND', self.parameters['BACKGROUND'].value)

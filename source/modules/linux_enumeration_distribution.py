@@ -27,23 +27,29 @@ class Module(GenericModule):
 		self.description = 'This module extracts various info about current distribution from specific files (namely /etc/issue and /etc/*-release).'
 		self.kb_access = [
 			'DISTRIBUTION',
-			'DISTRIBUTION ISSUE',
+			'ISSUE',
+			'LSB-RELEASE',
+			'OS-RELEASE',
+			'REDHAT-RELEASE',
 		]
 		self.dependencies = {
 
 		}
 		self.changelog = ''
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		

@@ -30,8 +30,8 @@ This module detects devices by passively listening to the traffic. It needs scap
 """
 		self.kb_access = [
 			'NETWORK',
-			'NETWORK INTERFACES',
-			'NETWORK HOSTS',
+			'INTERFACES',
+			'HOSTS',
 		]
 		
 		self.dependencies = {
@@ -40,20 +40,24 @@ This module detects devices by passively listening to the traffic. It needs scap
 		self.changelog = """
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='yes', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='yes', mandatory=True, description='Suppress the output'),
 			'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
 			'TIMEOUT' : Parameter(value='30', mandatory=True, description='Number of seconds to listen'),
 			'INTERFACE' : Parameter(value='', mandatory=False, description='Interface to listen on (default: all)'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
+		# check parameteres
 		silent = positive(self.parameters['SILENT'].value)
 		if not positive(self.parameters['BACKGROUND'].value) and not negative(self.parameters['BACKGROUND'].value):
 			log.err('Bad %s value: %s.', 'BACKGROUND', self.parameters['BACKGROUND'].value)
@@ -62,6 +66,7 @@ This module detects devices by passively listening to the traffic. It needs scap
 			log.err('Bad timeout value: %d', int(self.parameters['TIMEOUT'].value))
 			return None
 		# # # # # # # #
+		# check scapy and tcpdump support
 		if not command_exists('scapy'):
 			log.err('Scapy is needed to run this module.')
 			return None
@@ -79,6 +84,7 @@ This module detects devices by passively listening to the traffic. It needs scap
 			nei.parameters['SILENT'].value = 'yes'
 			nei.Run()
 		
+		# check whether interface (if needed) is present
 		if iface != '' and not lib.kb.exists(('NETWORK INTERFACES %s' % iface).split(' ')):
 			log.err('Interface \'%s\' does not exist.' % iface)
 			return None
@@ -111,6 +117,7 @@ class Thread(threading.Thread):
 			self.scapy.sniff(prn=self.process, filter='ip or arp', store=0, timeout=self.timeout, stopper=self.stopper)
 		else:
 			self.scapy.sniff(iface=self.iface, prn=self.process, filter='ip or arp', store=0, timeout=self.timeout, stopper=self.stopper)
+		# update knowledge base
 		for x in self.hosts:
 			lib.kb.add('NETWORK HOSTS %s' % (x), self.hosts[x])
 

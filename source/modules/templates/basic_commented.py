@@ -48,23 +48,23 @@ Tired of the comments? Check the "template" module.
 		self.changelog = """
 """
 
-		self.ResetParameters() # do not touch this
+		self.reset_parameters() # do not touch this
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		# Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used. Do not use spaces.
-		# If the parameters is marked as kb or dependency, value is checked for existence (in kb or module list) before the execution.
-		# For KB subkeys use dot notation (e.g. DISTRIBUTION.OS-RELEASE).
-		# For dependencty, abbreviations can be used.
 		# Always define SILENT parameter and do not print anything (except cricital errors) if SILENT==yes - for intermodule calls
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 		}
 
-	def Check(self):
-		# If the module can be checked for success without execution (like some exploits), you should do it here. Do not use any dependencies.
-		log.info('This module does not support check.')
+	def check(self):
+		# If the module can be checked for success without execution (like some exploits), you should do it here. Do not use any dependencies. Return True if module will succeed, else return False.
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		# Define your code here

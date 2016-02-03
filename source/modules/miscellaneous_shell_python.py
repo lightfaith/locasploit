@@ -32,17 +32,20 @@ This module uses Python's exec() function to execute any commands. These will ru
 		self.changelog = """
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
 		old_prompt = lib.prompt
@@ -63,20 +66,21 @@ This module uses Python's exec() function to execute any commands. These will ru
 		while True:
 			if not silent:
 				log.prompt()
-			# check input commands first
-			if len(lib.input_commands) > 0:
-				line = lib.input_commands[0]
-				del lib.input_commands[0]
+			# check command queue
+			if len(lib.commands) > 0:
+				line = lib.commands[0]
 				if not silent:
 					log.attachline(line)
+				del lib.commands[0]
+				if line in ends:
+					break
+				try:
+					exec(line)
+				except:
+					log.err(sys.exc_info()[1])
+
 			else:
 				line = func()
-			if line in ends:
-				break
-			try:
-				exec(line)
-			except:
-				log.err(sys.exc_info()[1])
 				
 		lib.prompt = old_prompt
 		# # # # # # # #

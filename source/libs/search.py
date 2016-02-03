@@ -5,52 +5,53 @@ class Node:
 	pass
 
 class Leaf(Node):
+	# keyword
 	def __init__(self, keyword):
 		self.keyword = keyword
-	def Eval(self):
-		result = SearchKeyword(self.keyword)
-		#print 'Leaf "%s" Eval(): ' % self.keyword, result
+	def eval(self):
+		result = search_keyword(self.keyword)
 		return result
-	def String(self):
+	def string(self):
 		return self.keyword
 	
 class Not(Node):
+	# negates the child result
 	def __init__(self, child):
 		self.child = child
-	def Eval(self):
-		result = [x for x in lib.modules if x not in self.child.Eval()]
-		#print 'Not Eval(): ', result
+	def eval(self):
+		result = [x for x in lib.modules if x not in self.child.eval()]
 		return result
-	def String(self):
-		return 'Not(%s)' % self.child.String()
+	def string(self):
+		return 'Not(%s)' % self.child.string()
 
 class And(Node):
+	# gets entries present in BOTH children
 	def __init__(self, child1, child2):
 		self.child1 = child1
 		self.child2 = child2
-	def Eval(self):
-		result = [x for x in self.child1.Eval() if x in self.child2.Eval()]
-		#print 'And Eval(): ', result
+	def eval(self):
+		result = [x for x in self.child1.eval() if x in self.child2.eval()]
 		return result
-	def String(self):
-		return 'And(%s, %s)' % (self.child1.String(), self.child2.String())
+	def string(self):
+		return 'And(%s, %s)' % (self.child1.string(), self.child2.string())
 		
 
 class Or(Node):
+	# gets entries present in ANY of children
 	def __init__(self, child1, child2):
 		self.child1 = child1
 		self.child2 = child2
-	def Eval(self):
+	def eval(self):
 		result = []
-		for x in self.child1.Eval() + self.child2.Eval():
+		for x in self.child1.eval() + self.child2.eval():
 			if x not in result:
 				result.append(x)
-		#print 'Or Eval(): ', result
 		return result
-	def String(self):
-		return 'Or(%s, %s)' % (self.child1.String(), self.child2.String())
+	def string(self):
+		return 'Or(%s, %s)' % (self.child1.string(), self.child2.string())
 
-def Search(expression):
+def search(expression):
+	# build a tree from expression and run eval() on root
 	priority = ['', '|', '&', '!', '('] # '' won't be there (filtered in Split())
 	depth = 0
 	nodes = []
@@ -127,11 +128,11 @@ def Search(expression):
 	if len(nodes) != 1:
 		log.err('Your query is broken (too many operands).')
 		return []
-	#print nodes[0].String()
-	return nodes[0].Eval()
+	return nodes[0].eval()
 
 
-def SearchKeyword(keyword, moduleonly=False):
+def search_keyword(keyword, moduleonly=False):
+	# search for a specified keyword 
 	if keyword[0] in ['>', '<', '='] and len(keyword[1:]) == 4 and keyword[1:].isdigit():
 		# that is year query
 		year = int(keyword[1:])
@@ -152,9 +153,9 @@ def SearchKeyword(keyword, moduleonly=False):
 		by_kb = []
 		by_dependency = []
 		by_version = []
-		by_module = SearchAbbr(keyword.lower(), [x.lower() for x in list(modules)]) + [x for x in modules if keyword.lower() in x.lower()]
+		by_module = search_abbr(keyword.lower(), [x.lower() for x in list(modules)]) + [x for x in modules if keyword.lower() in x.lower()]
 
-		if not moduleonly:
+		if not moduleonly: # used search or list command, not use
 			# in tags
 			by_tag = [x for x in modules if keyword.lower() in [y.lower() for y in modules[x].tags]]
 			
@@ -180,7 +181,10 @@ def SearchKeyword(keyword, moduleonly=False):
 				total.append(x)
 		return total
 
-def SearchAbbr(keyword, data):
+def search_abbr(keyword, data):
+	# search for abbreviations
+	# linux.enumeration.kernel can be searched as linux.e, l.e.k, li etc. if not ambiguous
+	
 	ref_parts = list(filter(None, keyword.split('.')))
 	parts = {}
 	# select all modules with more or equal parts than the searched expression

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-#from source.libs.include import *
 import source.libs.define as lib
 import sys, threading
 
@@ -12,7 +11,7 @@ if sys.platform.startswith('win'):
 
 
 loglock = threading.Lock()
-should_newline = True
+should_newline = True # threads use this to print to newlines
 
 class Color:
 	# ANSI CODES (should work for everythin except Windows)
@@ -50,6 +49,7 @@ class Color:
 
 	@staticmethod
 	def set(color=''):
+		# color will be set with regards to platform
 		if sys.platform.startswith('win'):
 			if color == Color.PURPLE:
 				windll.kernel32.SetConsoleTextAttribute(win_stdout_handle, Color.WIN_FG_MAGENTA | Color.WIN_FG_INTENSITY)
@@ -63,120 +63,133 @@ class Color:
 				windll.kernel32.SetConsoleTextAttribute(win_stdout_handle, Color.WIN_FG_YELLOW | Color.WIN_FG_INTENSITY)
 			else:
 				pass # leave as is
-		else: # really everything?
+		else:
+			# TODO really everything?
 			print(color, end='')
-	
+
 	@staticmethod
 	def reset():
+		# revert any color settings with regards to platform
 		if sys.platform.startswith('win'):
 			windll.kernel32.SetConsoleTextAttribute(win_stdout_handle, Color.WIN_FG_GREY)
-		else: # really everything?
+		else: # TODO really everything?
 			print(Color.END, end='')
 			
+# at start set default colors
 Color.reset()
 
 def prompt():
-	loglock.acquire()
-	threadline()
-	Color.set(Color.PURPLE)
+	# print prompt string
+#	loglock.acquire()                         # acquire screen writing lock
+	threadline()                              # print newline if not main thread and main thread printed last
+	Color.set(Color.PURPLE)                   # set colors
 	Color.set(Color.BOLD)
-	print(lib.prompt.expandtabs(4), end='')
-	Color.reset()
-	loglock.release()
+	print(lib.prompt.expandtabs(4), end='')   # print prompt
+	Color.reset()                             # reset colors
+#	loglock.release()                         # release the lock
 
 def write(string='', *colors):
+	# write with indent 4, no newline
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	for color in colors:
 		Color.set(color)
 	print('    %s'.expandtabs(4) % str(string), end='')
 	Color.reset()
-	loglock.release()
+#	loglock.release()
 
 def writeline(string='', *colors):
+	# write with indent 4, newline
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	for color in colors:
 		Color.set(color)
 	print('    %s'.expandtabs(4) % str(string))
 	Color.reset()
-	loglock.release()
+#	loglock.release()
 
 def attach(string='', *colors):
+	# write with no indent, no newline
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	for color in colors:
 		Color.set(color)
 	print('%s'.expandtabs(4) % str(string), end='')
 	Color.reset()
-	loglock.release()
+#	loglock.release()
 
 def attachline(string='', *colors):
+	# write with no indent, newline
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	for color in colors:
 		Color.set(color)
 	print('%s'.expandtabs(4) % str(string))
 	Color.reset()
-	loglock.release()
+#	loglock.release()
 
 def info(string=''):
+	# print line with blue [.]
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	Color.set(Color.BLUE)
 	Color.set(Color.BOLD)
 	print('[.] ', end='')
 	Color.reset()
 	print('%s'.expandtabs(4) % str(string))
-	loglock.release()
+#	loglock.release()
 
 def ok(string=''):
+	# print line with green [+]
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	Color.set(Color.GREEN)
 	Color.set(Color.BOLD)
 	print('[+] ', end='')
 	Color.reset()
 	print('%s'.expandtabs(4) % str(string))
-	loglock.release()
+#	loglock.release()
 
 def warn(string=''):
+	# print line with yellow [!]
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	Color.set(Color.YELLOW)
 	Color.set(Color.BOLD)
 	print('[!] ', end='')
 	Color.reset()
 	print('%s'.expandtabs(4) % str(string))
-	loglock.release()
+#	loglock.release()
 
 def err(string=''):
+	# print line with red [-]
 	if type(string) is bytes:
 		string = string.decode('utf-8')
-	loglock.acquire()
+#	loglock.acquire()
 	threadline()
 	Color.set(Color.RED)
 	Color.set(Color.BOLD)
 	print('[-] ', end='')
 	Color.reset()
 	print('%s'.expandtabs(4) % str(string))
-	loglock.release()
+#	loglock.release()
 
 def threadline():
+	# print newline if not main thread and main thread printed last
 	global should_newline
 	if lib.main_thread is not threading.current_thread() and should_newline:
 		should_newline = False
@@ -186,6 +199,7 @@ def threadline():
 	
 
 def show_time(time):
+	# convert number of miliseconds to h:mm:ss.sss
 	if type(time) != float:
 		return '/'
 	hours = time / 3600

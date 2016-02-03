@@ -45,6 +45,7 @@ stopper: function returning true or false to stop the sniffing process
         stoptime = time.time()+timeout
     remain = None
     while 1:
+		# if True, stop the loop
         if stopper is not None and stopper():
             break
         try:

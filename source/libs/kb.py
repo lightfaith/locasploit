@@ -1,5 +1,5 @@
-#!/usr/bin/env python33
-import threading
+#!/usr/bin/env python3
+import re, threading
 import source.libs.log as log
 import source.libs.define as lib
 
@@ -59,51 +59,67 @@ class KB:
 
 
 	def dump(self, query=''):
-		import json
 		keys = [x for x in query.split(' ') if len(x)>0]
+		# print the knowledge base/selected branch
 		if len(keys) == 0:
-			#log.attachline(json.dumps(self.kb, indent=4))
-			KB.getstructure(self.kb)
+			#log.attachline(json.dumps(self.kb, indent=4)) # not working in python3
+			KB.get_structure(self.kb)
 		else:
+			# find the desired branch
 			result = self.find(keys, parent=False, silent=False)
 			log.attachline(' > '.join(keys[:result[1]+1])+':', log.Color.PURPLE)
-			log.attachline(json.dumps(result[0], indent=4))
+			#log.attachline(json.dumps(result[0], indent=4))
+			KB.get_structure(result[0])
 	
 	def delete(self, query=''):
 		keys = [x for x in query.split(' ') if len(x)>0]
+		# delete specified branch
+		keys = [x for x in query.split(' ') if len(x)>0]
 		self.lock.acquire()
 		if len(keys) == 0:
+			# delete everything
 			self.kb = {}
 		else:
+			# find node holding branch to delete
 			result = self.find(keys, parent=True)
 			if result[1]+1<len(keys):
-				#log.info('not found, not deleting...')
+				# not found, not deleting
 				pass
 			else:
+				# delete branch
 				del result[0][keys[result[1]]]
 				log.info('Entry %s has been deleted.' % ' > '.join(keys[:result[1]+1]))
 		self.lock.release()
 	
 	def exists(self, keys):
+		# check if a branch exists
 		return self.find(keys, parent=False, silent=True, boolean=True)
 	
 	def find(self, keys, parent=False, silent=True, boolean=False):
 		i = 0
+		if type(keys) is bytes:
+			keys = keys.decode('utf-8')
+		if type(keys) is str:
+			keys = [x for x in keys.split(' ') if len(x)>0]
 		branch = self.kb
 		parentbranch = None
+		# search branch one key at a time
 		for i in range(0, len(keys)):
 			parentbranch = branch
+			# working with dict? is the key present?
 			if type(branch) == dict and keys[i] in branch:
 				branch = branch[keys[i]]
+			# list or tuple? is key a number? is the key there?
 			elif (type(branch) == list or type(branch) == tuple) and keys[i].isdigit() and int(keys[i])<len(branch):
 				branch = branch[int(keys[i])]
+			# dealing with last key and the branch is only a string?
 			elif i == len(keys)-1 and type(branch) == str:
 				tmpbranch = [x for x in branch.splitlines() if keys[i] in x]
 				if len(tmpbranch) == 0:
 					if not silent:
 						log.err('Cannot find key \'%s\'.' % keys[i])
 					if boolean:
-						return False
+						return False # key not found
 					i -= 1
 					break		
 				if boolean:
@@ -113,42 +129,47 @@ class KB:
 						return (parentbranch, i)
 					else:
 						return (tmpbranch, i)
+			# weird branch type
 			else:
 				if not silent:
 					log.err('Cannot find key \'%s\'.' % keys[i])
 				if boolean:
-					return False
+					return False # key not found
 				i -= 1
 				break
 		if boolean:
-			return True
+			return True # key found
 		else:
 			if parent:
-				return (parentbranch, i)
+				return (parentbranch, i) # return parent node of last branch found
 			else:
-				return (branch, i)
+				return (branch, i) # return last branch found
 
 
 	@staticmethod
-	def getstructure(data, tab = 0):
+	def get_structure(data, tab = 0):
+		""" print a given Knowledge Base branch """
+		# dictionary
 		if type(data) is dict:
-			log.attachline(' '*tab + '{')
-			for key in data:
-				log.attachline(' '*tab + '  ' + key + ':')
-				KB.getstructure(data[key], tab+4)
-			log.attachline(' '*tab + '}')
+			log.attachline(' ' * tab + '{')
+			for key in sorted(data, key=lambda x: [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', x)]):
+				log.attachline(' ' * tab + '  ' + key + ':')
+				KB.get_structure(data[key], tab + 4)
+			log.attachline(' ' * tab + '}')
+		# list
 		elif type(data) is list and len(data) > 0:
-			log.attachline(' '*tab + '[')
-			KB.getstructure(data[0], tab+4)
-			log.attachline(' '*tab + '  ...')
-			log.attachline(' '*tab + ']')
+			log.attachline(' ' * tab + '[')
+			KB.get_structure(data[0], tab+4)
+			log.attachline(' ' * tab + ']')
+		# unicode string
 		elif type(data) is str:
 			for line in data.splitlines():
-				log.attachline(' '*tab + line)
+				log.attachline(' ' * tab + line)
+		# bytes, transform to unicode string
 		elif type(data) is bytes:
 			data = data.decode('utf-8')
 			for line in data.splitlines():
-				log.attachline(' '*tab + line)
+				log.attachline(' ' * tab + line)
 
-
+# initialize global variable
 lib.kb = KB()

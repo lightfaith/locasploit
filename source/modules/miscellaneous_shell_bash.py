@@ -31,19 +31,23 @@ This module allows bash command execution.
 		self.changelog = """
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
+	def check(self):
+		silent = positive(self.parameters['SILENT'].value)
+		if not silent:
+			log.info('This module does not support check.')
+		return False
 	
-	def Run(self):
+	def run(self):
 		silent = positive(self.parameters['SILENT'].value)
 		# # # # # # # #
+		# get input source with regards to python version
 		old_prompt = lib.prompt
 		if lib.python_version[0] == '2':
 			func = raw_input
@@ -58,7 +62,8 @@ This module allows bash command execution.
 			end_string = ', '.join(ends[:-1]) + ' or ' + ends[-1]
 			log.info('Type %s to exit.' % (end_string))
 
-		if lib.global_parameters['ROOT'] == lib.global_parameters['USER']:
+		# set console to match privileges
+		if is_admin():
 			lib.prompt = '  # '
 		else:
 			lib.prompt = '  $ '
@@ -66,10 +71,10 @@ This module allows bash command execution.
 		while True:
 			if not silent:
 				log.prompt()
-			# check input_commands
-			if len(lib.input_commands) > 0:
-				line = lib.input_commands[0]
-				del lib.input_commands[0]
+			# check lib.commands
+			if len(lib.commands) > 0:
+				line = lib.commands[0]
+				del lib.commands[0]
 				if not silent:
 					log.attachline(line)
 			else:

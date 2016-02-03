@@ -1,27 +1,23 @@
 #!/usr/bin/env python3
 import os, sys, threading
-#from source.libs.kb import *
-#from source.libs.scheduler import *
 
-appname = 'Locasploit'
-python_version = '.'.join(map(str, sys.version_info[:3]))
-prompt = ' >  '
-module_objects = []
-modules = {}
-active_module = None
-input_commands = []
-command_history = []
-module_history = []
-#kb = KB()
+appname = 'Locasploit'                                    # application name
+python_version = '.'.join(map(str, sys.version_info[:3])) # python version
+prompt = ' >  '                                           # current prompt string
+module_objects = []                                       # temporary list for module loading
+modules = {}                                              # dictionary of all modules
+active_module = None                                      # currently active module
+from_input_file = False                                   # commands provided from input file
+commands = []                                             # list of commands to execute
+command_history = []                                      # history of commands
+module_history = []                                       # history of selected modules
 if 'kb' not in vars():
-	kb = None
+	kb = None                                             # knowledge base, initialized in kb.py
 main_thread = threading.current_thread()
-#scheduler = Scheduler()
-#scheduler.start()
 if 'scheduler' not in vars():
-	scheduler = None
+	scheduler = None                                      # thread scheduler, initialized in scheduler.py
 
-if sys.platform.startswith('linux'):
+if sys.platform.startswith('linux'):                      # global parameters
 	import pwd
 	global_parameters = {
 		#'USER': pwd.getpwuid(os.getuid())[0], 

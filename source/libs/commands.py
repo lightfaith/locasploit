@@ -47,7 +47,8 @@ def execute_command(command):
 			else: # not a year, an expression
 				modules = lib.modules
 				
-				by_module_tmp = SearchAbbr(command[7:].lower(), [x.lower() for x in list(modules)]) + [x for x in modules if command[7:].lower() in x.lower()]
+				# search by module
+				by_module_tmp = search_abbr(command[7:].lower(), [x.lower() for x in list(modules)]) + [x for x in modules if command[7:].lower() in x.lower()]
 				by_module = []
 				for x in by_module_tmp:
 					if x not in by_module:
@@ -57,6 +58,7 @@ def execute_command(command):
 					print_modules(by_module)
 					log.writeline('')
 		
+				# search by tag
 				by_tag = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].tags]]
 				if len(by_tag) > 0:
 					log.attachline('By tags:', log.Color.PURPLE)
@@ -64,38 +66,43 @@ def execute_command(command):
 					log.writeline('')
 		
 				
+				# search by parameter
 				by_parameter = [x for x in modules if command[7:].lower() in [y.lower() for y in modules[x].parameters]]
 				if len(by_parameter) > 0:
 					log.attachline('By parameters:', log.Color.PURPLE)
 					print_modules(by_parameter)
 					log.writeline('')
 			
+				# search by author
 				by_author = [x for x in modules for authors in modules[x].authors if command[7:].lower() in authors.name.lower() or command[7:].lower() in authors.email.lower() or command[7:].lower() in authors.web.lower()]
 				if len(by_author) > 0:
 					log.attachline('By authors:', log.Color.PURPLE)
 					print_modules(by_author)
 					log.writeline('')
 				
+				# search by knowledge base
 				by_kb = [x for x in modules if command[7:].upper() in [y.upper() for y in modules[x].kb_access]]
 				if len(by_kb) > 0:
 					log.attachline('By Knowledge Base:', log.Color.PURPLE)
 					print_modules(by_kb)
 					log.writeline('')
 				
-				by_dependency = [x for x in modules if len(SearchAbbr(command[7:].lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
+				# search by dependency
+				by_dependency = [x for x in modules if len(search_abbr(command[7:].lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
 				if len(by_dependency) > 0:
 					log.attachline('By dependencies:', log.Color.PURPLE)
 					print_modules(by_dependency)
 					log.writeline('')
 
+				# search by version
 				by_version = [x for x in modules if command[7:].lower() == modules[x].version.lower()]
 				if len(by_version) > 0:
 					log.attachline('By version:', log.Color.PURPLE)
 					print_modules(by_version)
 					log.writeline('')
 
-		else: # complicated search, use Search()
-			print_modules(Search(command[7:]))
+		else: # complicated search, use search()
+			print_modules(search(command[7:]))
 
 	# module selection
 	elif command[0:4] == "use " and len(command)>4:
@@ -117,11 +124,11 @@ def execute_command(command):
 
 	# show options
 	elif command == 'show options' or command == 'show parameters':
-		print_module_info(basics=False, authors=False, description=False, references=False, tags=False, kb=False, dependencies=False, changelog=False)
+		print_module_info(basics=False, authors=False, description=False, references=False, tags=False, kb=False, dependencies=False, dependent=False, changelog=False)
 	
-	# show missing
+	# show only undefined options
 	elif command == 'show missing':
-		print_module_info(basics=False, authors=False, description=False, references=False, tags=False, kb=False, dependencies=False, changelog=False, missing=True)
+		print_module_info(basics=False, authors=False, description=False, references=False, tags=False, kb=False, dependencies=False, dependent=False, changelog=False, missing=True)
 
 	# show global options
 	elif command == 'getg':
@@ -190,73 +197,82 @@ def execute_command(command):
 		m = lib.active_module
 		if m is None:
 			log.warn('Choose a module first.')
+		# are all parameters in place?
 		elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
 				log.warn('Some parameters are undefined:')
 				for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
 					log.warn('    %s' % x)
 		else:
+			# check and measure time
 			start = time.time()
-			m.Check()
+			m.check()
 			end = time.time()
 			log.info('Module %s has been checked in %s.' % (m.name, log.show_time(end-start)))
 	
-	# run, check if module is not None and all arguments are set
+	# run
 	elif command in ['run', 'execute']:
 		m = lib.active_module
 		if m is None:
 			log.warn('Choose a module first.')
+		# are all parameters in place?
 		elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
 				log.warn('Some parameters are undefined:')
 				for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
 					log.warn('    %s' % x)
 		else:
-			kb_dep_ok = True
-			for p in m.parameters:
-				if m.parameters[p].kb:
-					parts = m.parameters[p].value.split('.')
-					if len(parts) == 1 and parts[0] not in list(lib.kb.keys):
-						kb_dep_ok = False
-						log.err('Key %s is not present in the Knowledge Base.' % parts[0])
-					elif len(parts) == 2 and parts[1] not in lib.kb.subkeys(parts[0]):
-						kb_dep_ok = False
-						log.err('Key %s.%s is not present in the Knowledge Base.' % parts[0], parts[1])
-
-				if m.parameters[p].dependency:
-					matches = SearchKeyword(m.parameters[p].value)
-					if len(matches) == 0:
-						kb_dep_ok = False
-						log.err('Module %s does not exist.' % m.parameters[p].value)
-					elif len(matches) > 1:
-						kb_dep_ok = False
-						log.err('Ambiguous module name: %s.', m.parameters[p].value)
-			
-			if kb_dep_ok:
+##			kb_dep_ok = True # all kb entries and dependencies are accessible
+##			for p in m.parameters:
+##				# check KB if all kb defined parameters are there
+##				if m.parameters[p].kb and m.parameters[p].value != '':
+##					parts = m.parameters[p].value.split(' ')
+##					if not lib.kb.exists(parts):
+##						kb_dep_ok = False
+##						log.err('Key %s is not present in the Knowledge Base.' % parts[0])
+##				# check if all dependency modules are there
+##				if m.parameters[p].dependency:
+##					matches = search_keyword(m.parameters[p].value)
+##					if len(matches) == 0:
+##						kb_dep_ok = False
+##						log.err('Module %s does not exist.' % m.parameters[p].value)
+##					elif len(matches) > 1:
+##						kb_dep_ok = False
+##						log.err('Ambiguous module name: %s.', m.parameters[p].value)
+##			
+##			if kb_dep_ok:
+			if True:
+				# run the module
 				log.info('Module %s has started.' % (m.name))
 				try:
 					start = time.time()
-					job = m.Run()
-					if job is None: # no thread created
+					job = m.run() # result = None or thread
+					if job is None: 
+						# no thread running
 						end = time.time()
 						log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
-						# flush stdin (if not from file!)
-						if len(lib.input_commands) == 0:
+						
+						# flush stdin 
+						if len(lib.commands) == 0 or True:
 							try:
 								import termios
-								termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+								termios.tcflush(sys.stdin, termios.TCIFLUSH)
 							except ImportError:
+								print('X')
 								import msvcrt
 								while msvcrt.kbhit():
 									msvcrt.getch()
 							except:
+								print('Y')
 								log.err(sys.exc_info()[1])
 
-					else: # thread will run in the background
+					else: 
+						# thread returned, will run in the background
 						if 'TIMEOUT' in lib.active_module.parameters:
 							lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
 						else:
 							lib.scheduler.add(m.name, start, job)
 						
 				except:
+					print('Z')
 					traceback.format_exc()
 					log.err(sys.exc_info()[1])
 			
@@ -295,6 +311,7 @@ def execute_command(command):
 
 	elif command == 'authors':
 		everyone = {}
+		# gather author info: {(name, email): (num_of_modules, [web pages])}
 		for m in lib.modules:
 			for a in lib.modules[m].authors:
 				if (a.name, a.email) in everyone:
@@ -304,14 +321,17 @@ def execute_command(command):
 				else:
 					everyone[(a.name, a.email)] = [1, [a.web]]
 		
+		# compute column widths
 		maxn = max([len(x[0]) for x in everyone] + [4])
 		maxe = max([len(x[1]) for x in everyone] + [5])
 		maxp = max([len(str(everyone[x][0])) for x in everyone] + [7])
 		maxw = max([len(w) for x in everyone for w in everyone[x][1]] + [3])
+		# print header
 		log.writeline('%*s  %-*s  %*s  %-*s' % (maxn, 'NAME', maxe, 'EMAIL', maxp, 'MODULES', maxw, 'WEB'))
 		log.writeline('%s  %s  %s  %s' % ('-' * maxn, '-' * maxe, '-' *maxp, '-' * maxw), log.Color.PURPLE)
 		# sort by number of plugins, then by name
 		keys = sorted(sorted(list(everyone), key = lambda x: x[0]), key = lambda x: everyone[x][0], reverse=True)
+		# print authors
 		for a in everyone:
 			wcounter = 0
 			for w in everyone[a][1]:
@@ -339,14 +359,14 @@ def execute_command(command):
 / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / / /
 """
 
-def set_module(module):
+def set_module(module): # set selected module as active
 	m = None
 	# first, direct match
 	if module in lib.modules:
 		m = module
 	else:
 		# find matching modules
-		matches = SearchKeyword(module, moduleonly=True)	
+		matches = search_keyword(module, moduleonly=True)	
 		if len(matches) == 0:
 			pass # module does not exist
 		elif len(matches) > 1:
@@ -364,11 +384,13 @@ def set_module(module):
 				log.err('Dependency module \'%s\' does not exist.' % x)
 				dependency_missing = True
 
+		# dependencies ok, select the module
 		if not dependency_missing:
 			lib.active_module = lib.modules[m]
 			lib.prompt = "%s > " % (m)
 			lib.module_history.append(m)
-			lib.active_module.ResetParameters()
+			lib.active_module.reset_parameters()
+			# select parameters to global values if possible
 			for p in lib.active_module.parameters:
 				if lib.active_module.parameters[p].value == '' and p in lib.global_parameters:
 					lib.active_module.parameters[p].value = lib.global_parameters[p]
@@ -380,23 +402,21 @@ def set_module(module):
 
 
 def print_modules(modules, order_by_date=False):
-	# compute column sizes
+	# compute column widths
 	maxv = max([len(lib.modules[m].version) for m in modules] + [7])
 	maxm = max([len(m) for m in modules] + [6])
 	maxa = max([len(a.name) for m in modules for a in lib.modules[m].authors] + [7])
+	# print header
 	log.attachline("%*s  %-*s  %-*s  %-10s  %-s" % (maxv, 'VERSION', maxm, 'MODULE', maxa, 'AUTHORS', 'DATE', 'DESCRIPTION'))
 	log.attachline('-' * maxv + '  ' + '-' * maxm + '  ' + '-' * maxa + '  ' + '-' * 10 + '  ' + '-' * 11, log.Color.PURPLE)
+	
 	# do some sorting
 	if order_by_date:
-		#modules.sort(key=lambda x: x)
-		#modules.sort(key=lambda x: lib.modules[x].date, reverse=True)
 		keys = sorted(sorted(list(modules), key=lambda x: x), key=lambda x: lib.modules[x].date, reverse=True)
 	else:
-		#modules.sort(key=lambda x: x)
 		keys = sorted(list(modules), key=lambda x: x)
 		
 	# print rows
-	#for m in modules:
 	for m in keys:
 		acounter=0 # if more authors, do not print other cells over and over
 		for a in lib.modules[m].authors:
@@ -410,12 +430,13 @@ def print_modules(modules, order_by_date=False):
 
 
 
-def print_module_info(basics=True, authors=True, options=True, missing=False, description=True, references=True, tags=True, kb=True, dependencies=True, changelog=True):
+def print_module_info(basics=True, authors=True, options=True, missing=False, description=True, references=True, tags=True, kb=True, dependencies=True, dependent=True, changelog=True):
 	m = lib.active_module
 	if m == None:
 		log.warn('Choose a module first.')
 		return
 
+	# general info 
 	if basics:
 		length = max([0] + [len(x) for x in ['Name', 'Date', 'Version', 'License']])
 		log.attach('%*s: ' % (length, 'Name'), log.Color.PURPLE) 
@@ -428,37 +449,44 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 		log.attachline('%s' % (m.license))
 		log.attachline()
 	
+	# authors
 	if authors:
 		log.attachline('Authors:', log.Color.PURPLE)
 		for a in m.authors:
 			log.writeline('%s %s %s' % (a.name, '<%s>' % (a.email) if len(a.email) > 0 else '', '{%s}' % (a.web) if len(a.web) > 0 else ''))
 		log.attachline()
 
+	# parameters
 	if options and len(m.parameters) > 0:
 		log.attachline('Parameters:', log.Color.PURPLE)
 		params = list(m.parameters) if not missing else [p for p in list(m.parameters) if m.parameters[p].value == '']
+		# compute column widths
 		maxn = max([4]+[len(p) for p in params])
 		maxv = max([5]+[len(m.parameters[p].value) for p in params])
-
+		# print header
 		log.writeline('%-*s  %-*s  %s  %s' %(maxn, 'NAME', maxv, 'VALUE', 'MANDATORY', 'DESCRIPTION'))
 		log.writeline('%s  %s  %s  %s' %('-' * maxn, '-' * maxv, '-' * 9, '-' * 11), log.Color.PURPLE)
+		
 		# sort by mandatory, then by name
 		keys = sorted(sorted(params, key = lambda y: y), key = lambda x: m.parameters[x].mandatory, reverse=True)
 		for p in keys:
 			log.writeline('%-*s  %-*s      %s      %s' %(maxn, p, maxv, m.parameters[p].value, '+' if m.parameters[p].mandatory else ' ', m.parameters[p].description))
 		log.writeline()
 	
+	# description
 	if description:
 		log.attachline('Description:', log.Color.PURPLE)
 		log.attachline(m.description)
 		log.writeline()
 
+	# references
 	if references and len(m.references)>0:
 		log.attachline('References:', log.Color.PURPLE)
 		for r in m.references:
 			log.writeline(r)
 		log.writeline()
 	
+	# tags
 	if tags and len(m.tags) > 0:
 		log.attachline('Tags:', log.Color.PURPLE)
 		for i in range(0, len(m.tags)):
@@ -468,14 +496,16 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 				log.attach(', %s' % m.tags[i])
 		log.writeline('\n')
 		
+	# knowledge base structures accessed
 	if kb and len(m.kb_access) > 0:
 		log.attachline('Knowledge Base:', log.Color.PURPLE)
 		for k in m.kb_access:
 			log.writeline(k)
 		log.writeline()
 
+	# modules the active module depends on
 	if dependencies and len(m.dependencies) > 0:
-		log.attachline('Module dependencies:', log.Color.PURPLE)
+		log.attachline('Dependencies:', log.Color.PURPLE)
 		maxd = max([6] + [len(d) for d in m.dependencies])
 		log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
 		log.writeline('%s  %s' % ('-' * maxd, '-' * 7), log.Color.PURPLE)
@@ -483,6 +513,20 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 			log.writeline('%-*s  %s  ' % (maxd, d, m.dependencies[d]))
 		log.writeline()
 
+	# modules dependent on the active module
+	if dependent:
+		dep = [x for x in lib.modules if len([y for y in lib.modules[x].dependencies if y == m.name and lib.modules[x].dependencies[y] == m.version]) > 0]
+		if len(dep) > 0:
+			log.attachline('Dependent modules:', log.Color.PURPLE)
+			maxd = max([6] + [len(d) for d in dep])
+			log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
+			log.writeline('%s  %s' % ('-' * maxd, '-' * 7), log.Color.PURPLE)
+			for d in dep:
+				log.writeline('%-*s  %s  ' % (maxd, d, lib.modules[d].version))
+			log.writeline()
+
+			
+	# changelog
 	if changelog and len(m.changelog.strip()) > 0:
 		log.attachline('Changelog:', log.Color.PURPLE)
 		log.attachline(m.changelog)

@@ -30,7 +30,7 @@ This module detects local network interfaces and writes them into the Knowledge 
 """
 		self.kb_access = [
 			'NETWORK',
-			'NETWORK INTERFACES',
+			'INTERFACES',
 		]
 		
 		self.dependencies = {
@@ -38,22 +38,21 @@ This module detects local network interfaces and writes them into the Knowledge 
 		self.changelog = """
 """
 
-		self.ResetParameters()
+		self.reset_parameters()
 
-	def ResetParameters(self):
+	def reset_parameters(self):
 		self.parameters = {
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output', kb=False, dependency=False),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
 		}
 
-	def Check(self):
-		log.info('This module does not support check.')
-	
-	def Run(self):
+	def check(self):
 		silent = positive(self.parameters['SILENT'].value)
-		# # # # # # # #
-#		if len([x for x in command('dpkg -s python-netifaces').splitlines() if x[:7] == 'Status:' and 'installed' in x])!=1:
-#			log.err('Python-netifaces is needed to run this module.')
-#			return None			
+		if not silent:
+			log.info('This module does not support check.')
+		return False
+	
+	def run(self):
+		silent = positive(self.parameters['SILENT'].value)
 		try:
 			import netifaces as n
 		except:

@@ -11,6 +11,6 @@ class GenericModule():
 	def __init__(self):
 		self.kb_access = []
 
-	def Run(self):
+	def run(self):
 		log.err('[!] You should not run this module!')
 
