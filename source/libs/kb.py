@@ -28,7 +28,7 @@ class KB:
 				branch = self.kb
 				existindex = 0 # noted, now create from first...
 			else: # work with the existing branch
-				branch = self.find(key[:existindex])[0]
+				branch = self.find(key[:existindex])
 
 			# create dictionaries except last one (that will be added as a key)
 			for x in key[existindex:-1]:
@@ -43,7 +43,7 @@ class KB:
 
 		# tree is ok, add it there
 		self.lock.acquire()
-		branch = self.find(key[:-1])[0]
+		branch = self.find(key[:-1])
 		# add the last key 
 		if type(branch) == dict:
 			branch[key[-1]] = data
@@ -66,7 +66,7 @@ class KB:
 			KB.get_structure(self.kb)
 		else:
 			# find the desired branch
-			result = self.find(keys, parent=False, silent=False)
+			result = self.search(keys, parent=False, silent=False)
 			log.attachline(' > '.join(keys[:result[1]+1])+':', log.Color.PURPLE)
 			#log.attachline(json.dumps(result[0], indent=4))
 			KB.get_structure(result[0])
@@ -81,7 +81,7 @@ class KB:
 			self.kb = {}
 		else:
 			# find node holding branch to delete
-			result = self.find(keys, parent=True)
+			result = self.search(keys, parent=True)
 			if result[1]+1<len(keys):
 				# not found, not deleting
 				pass
@@ -93,9 +93,12 @@ class KB:
 	
 	def exists(self, keys):
 		# check if a branch exists
-		return self.find(keys, parent=False, silent=True, boolean=True)
+		return self.search(keys, parent=False, silent=True, boolean=True)
 	
-	def find(self, keys, parent=False, silent=True, boolean=False):
+	def find(self, keys):
+		return self.search(keys, parent=False, silent=True, boolean=False)[0]
+
+	def search(self, keys, parent=False, silent=True, boolean=False):
 		i = 0
 		if type(keys) is bytes:
 			keys = keys.decode('utf-8')
