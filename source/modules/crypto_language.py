@@ -33,7 +33,9 @@ For some reason, adding threads does not help. This should be fixed...
 		}
 		self.changelog = """
 1.1: Threading support (not quite efficient)
-1.0: language recognition
+     Word splitting by punct, numbers and whitespace
+1.0: Language recognition
+     Words A-Za-z'0-9
 """
 
 		self.reset_parameters()
