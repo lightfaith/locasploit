@@ -222,38 +222,33 @@ def execute_command(command):
 		else:
 			# run the module
 			log.info('Module %s has started.' % (m.name))
-			try:
-				start = time.time()
-				job = m.run() # result = None or thread
-				if job is None: 
-					# no thread running
-					end = time.time()
-					log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
-					
-					# flush stdin 
-					if len(lib.commands) == 0 or True:
-						try:
-							import termios
-							termios.tcflush(sys.stdin, termios.TCIFLUSH)
-						except ImportError:
-							print('X')
-							import msvcrt
-							while msvcrt.kbhit():
-								msvcrt.getch()
-						except:
-							print('Y')
-							log.err(sys.exc_info()[1])
-					else: 
-						# thread returned, will run in the background
-						if 'TIMEOUT' in lib.active_module.parameters:
-							lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
-						else:
-							lib.scheduler.add(m.name, start, job)
-					
-			except:
-				print('Z')
-				traceback.format_exc()
-				log.err(sys.exc_info()[1])
+			
+			start = time.time()
+			job = m.run() # result = None or thread
+			if job is None: 
+				# no thread running
+				end = time.time()
+				log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))						
+				
+				# flush stdin 
+				if len(lib.commands) == 0 or True:
+					try:
+						import termios
+						termios.tcflush(sys.stdin, termios.TCIFLUSH)
+					except ImportError:
+						print('X')
+						import msvcrt
+						while msvcrt.kbhit():
+							msvcrt.getch()
+					except:
+						print('Y')
+						log.err(sys.exc_info()[1])
+				else: 
+					# thread returned, will run in the background
+					if 'TIMEOUT' in lib.active_module.parameters:
+						lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
+					else:
+						lib.scheduler.add(m.name, start, job)
 			
 	# print command history
 	elif command == 'history':
