@@ -1,0 +1,16 @@
+use readfile
+set PATH data/lotr_en.txt
+set KEY LOTR
+run
+use lang
+set KEY LOTR
+run
+
+use readfile
+set PATH data/lotr_cz.txt
+set KEY LOTR
+run
+use lang
+set KEY LOTR
+run
+q
