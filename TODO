@@ -1,0 +1,12 @@
+DONE:		module use by best match
+			exit too dangerous
+			lang comparison in db
+			delete_dictionary()
+			apply setg to current module
+			is_admin() for any user and activeroot
+PARTIALLY:	kb->db
+TODO:		SYSTEMID for linux.* modules
+			dict exports different SHA1
+			check/fix silent in modules
+			delete session (module?)
+			

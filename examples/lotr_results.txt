@@ -1,0 +1,36 @@
+1 = LOTR_EN
+2 = LOTR_CZ
+
+
+[.] LOTR_EN match against CZ: 11.35 %
+[+] LOTR_CZ match against CZ: 78.37 %
+[.] LOTR_EN match against CZ_ASCII: 13.32 %
+[.] LOTR_CZ match against CZ_ASCII: 42.42 %
+[+] LOTR_EN match against EN: 85.37 %
+[.] LOTR_CZ match against EN: 11.24 %
+
+------------------------------------------------
+
+[+] CZ analysis of LOTR_CZ: 78.37 %
+[.] CZ analysis of LOTR_CZ_ASCII: 47.47 %
+[.] CZ analysis of LOTR_EN: 11.66 %
+[.] CZ_ASCII analysis of LOTR_CZ: 42.42 %
+[+] CZ_ASCII analysis of LOTR_CZ_ASCII: 78.37 %
+[.] CZ_ASCII analysis of LOTR_EN: 13.61 %
+[.] EN analysis of LOTR_CZ: 11.24 %
+[.] EN analysis of LOTR_CZ_ASCII: 12.08 %
+[+] EN analysis of LOTR_EN: 85.31 %
+
+------------------------------------------------
+
+[+] CZ analysis of LOTR_CZ: 91.57 %
+[+] CZ analysis of LOTR_CZ_ASCII: 55.90 %
+[.] CZ analysis of LOTR_EN: 12.10 %
+[+] CZ_ASCII analysis of LOTR_CZ: 50.84 %
+[+] CZ_ASCII analysis of LOTR_CZ_ASCII: 91.57 %
+[.] CZ_ASCII analysis of LOTR_EN: 15.33 %
+[.] EN analysis of LOTR_CZ: 14.04 %
+[.] EN analysis of LOTR_CZ_ASCII: 15.17 %
+[+] EN analysis of LOTR_EN: 95.90 %
+
+

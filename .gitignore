@@ -61,9 +61,17 @@ target/
 #Ipython Notebook
 .ipynb_checkpoints
 
+######################################
+
 # Vim .swp files
 source/*/.*.swp
 .*.swp
 
 # input file
 input
+
+# private modules
+source/modules/private_*.py
+
+# obsolete modules
+source/modules/obsolete_*.py

@@ -1,0 +1,11 @@
+use locasploit.dictionary.import
+set DICT CZ
+set INPUTFILE /share/python/locasploit/dictionaries/cz.dic
+run
+set DICT CZ_ASCII
+set INPUTFILE /share/python/locasploit/dictionaries/cz_ascii.dic
+run
+set DICT EN
+set INPUTFILE /share/python/locasploit/dictionaries/en.dic
+run
+q

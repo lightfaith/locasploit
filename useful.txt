@@ -1,0 +1,22 @@
+fdisk -l
+fdisk -l /dev/sda
+cat /proc/fs
+
+/proc/<PID>/maps # start-end perm offset major:minor inode image
+/proc/meminfo
+/proc/vmstat
+
+
+
+http://unix.stackexchange.com/questions/14345/how-do-i-tell-im-running-in-a-chroot/14346#14346
+
+
+pip3:
+	regpath   - pathlib + winreg
+	registry  - windows registry API
+	filebytes - parsing ELF, PE...
+	grandalf  - graphing
+	rage      - windows registry manipulation
+	pyshark   - wrapper for tshark
+	winremote - managing win machines remotetly
+	pypiwin32 - python for window extensions (also win32net)

@@ -1,0 +1,22 @@
+# load 'encrypted' file
+use tb.readfile
+set INPUTFILE ./data/rot_cipher.txt
+set KEY CAESAR
+run
+
+# try some ROT deciphering
+use crypto.rot
+set KEY CAESAR
+set SILENT yes
+run
+
+# put it in the db
+use crypto.words.upload
+run
+
+
+# attempt to detect language
+use crypto.language
+set DICTS EN
+#set MATCHONLY true
+run

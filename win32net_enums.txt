@@ -1,0 +1,160 @@
+# http://timgolden.me.uk/pywin32-docs/win32net.html
+# http://timgolden.me.uk/pywin32-docs/html/win32/help/win32net.html
+        import winreg # regpath 
+        import win32net
+        ips = ['127.0.0.1']
+        
+        for ip in ips:
+            """
+            # ----------------- USERS, GROUPS -------------
+            print('\nNetUserGetLocalGroups - Local groups:')
+            print(win32net.NetUserGetLocalGroups(ip, 'Primo')) # get groups for user
+            
+            print('\nNetGroupGetInfo - info of \'none\' group:')
+            print(win32net.NetGroupGetInfo(ip, 'none', 2))
+            
+            print('\nNetGroupGetUsers - Users in \'none\' group:')
+            rh = 0
+            while True:
+                print(win32net.NetGroupGetUsers(ip, 'none', 1, rh))
+                if rh == 0:
+                    break
+            
+            print('\nNetGroupEnum - Net groups:')
+            rh = 0
+            while True:
+                print(win32net.NetGroupEnum(ip, 1, rh))
+                if rh == 0:
+                    break
+            
+            print('\nNetLocalGroupGetMembers - Users in \'Administrators\' group:')
+            rh = 0
+            while True:
+                print(win32net.NetLocalGroupGetMembers(ip, 'Administrators', 1, rh))
+                if rh == 0:
+                    break
+            
+            print('NetUserGetGroups - get groups for user')
+            print(win32net.NetUserGetGroups(ip, 'Primo'))
+            
+            print('NetUserEnum - enumerate all users')
+            rh = 0
+            while True:
+                result = win32net.NetUserEnum(ip, 3, rh)
+                for x in result[0]:
+                    print(x)
+                if rh == 0:
+                    break
+            
+            print('NetUserGetInfo - get info user account')
+            print(win32net.NetUserGetInfo(ip, 'Primo', 4))
+            
+            print('NetUserModalsGet - global user information')
+            print(win32net.NetUserModalsGet(ip, 0))
+            print(win32net.NetUserModalsGet(ip, 1))
+            print(win32net.NetUserModalsGet(ip, 2))
+            print(win32net.NetUserModalsGet(ip, 3))
+             
+            # ----------------- SERVER ----------------------
+            
+            print('NetServerEnum - server names and platform information')
+            print(win32net.NetServerEnum(None, 100)) # different types possible
+            
+            print('NetServerEnum - server names, types and assosciated data')
+            print(win32net.NetServerEnum(None, 101)) # different types possible
+            
+            print('NetServerGetInfo - ')
+            print(win32net.NetServerGetInfo(server, level))
+            
+            # ----------------- MESSGE ----------------------
+            
+            print('NetMessageNameEnum - ')
+            print(win32net.NetMessageNameEnum(None))
+             
+            # ----------------- SHARE ----------------------
+            
+            print('NetShareEnum - list shared resources on server')
+            rh = 0
+            while True:
+                result = win32net.NetShareEnum(ip, 2, rh)
+                for x in result[0]:
+                    print(x)
+                if rh == 0:
+                    break
+            
+            print('NetShareCheck - check if server is sharing a device')
+            print(win32net.NetShareCheck(ip, device))
+            
+            print('NetShareGetInfo - get info about given share')
+            print(win32net.NetShareGetInfo(ip, 'D$', 2))
+            
+            
+            # ----------------- Wksta ----------------------
+            
+            print('NetWkstaUserEnum - get info about logged users')
+            rh = 0
+            while True:
+                result = win32net.NetWkstaUserEnum(ip, 1, rh)
+                for x in result[0]:
+                    print(x)
+                if rh == 0:
+                    break
+            
+            print('NetWkstaGetInfo - get config info')
+            print(win32net.NetWkstaGetInfo(ip, 102))
+            
+            print('NetWkstaTransportEnum - get info about transport protocols')
+            rh = 0
+            while True:
+                result = win32net.NetWkstaUserEnum(ip, 1, rh)
+                for x in result[0]:
+                    print(x)
+                if rh == 0:
+                    break
+            
+            # ----------------- ServerDisk ----------------------
+            
+            print('NetServerDiskEnum - get list of drives')
+            print(win32net.NetServerDiskEnum(None, 0))
+            
+            # ----------------- Use ----------------------
+            
+            print('NetUseEnum - get info about transport protocols')
+            rh = 0
+            while True:
+                result = win32net.NetUseEnum(ip, 2, rh)
+                for x in result[0]:
+                    print(x)
+                if rh == 0:
+                    break
+            
+            print('NetUseGetInfo - get info about config element')
+            print(win32net.NetUseGetInfo(ip, '', 1))
+            
+            # ----------------- DC ----------------------
+            
+            print('NetGetDCName - get primary domain controller name')
+            print(win32net.NetGetDCName())
+            
+            # ----------------- Session ----------------------
+            
+            print('NetSessionEnum - get network sessions')
+            print(win32net.NetSessionEnum(2))
+            
+            print('NetSessionGetInfo - get network session info')
+            print(win32net.NetSessionGetInfo(2, None, client, username))
+            
+            # ----------------- File ----------------------
+            
+            print('NetFileEnum - get list of opened resources on server')
+            print(win32net.NetFileEnum(3, None, None, None))
+            
+            print('NetFileGetInfo - get info about opened resource')
+            print(win32net.NetSessionGetInfo(2, None, fileid))
+            
+            # ----------------- Statistics ----------------------
+            
+            print('NetStatisticsGet - get network statistics for specified service')
+            print(win32net.NetStatisticsGet(ip, 'SERVICE_WORKSTATION', 0, 0))
+            """
+         

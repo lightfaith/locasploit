@@ -1,0 +1,96 @@
+# Cryptopals 1 - Basics
+# Vitezslav Grygar
+# 2016
+
+# 1. Convert hex to base64
+use tb.insert
+set KEY 1.1
+set VALUE 49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d
+run
+
+use misc.encoding.hex
+set KEY 1.1
+set MODE d
+run
+
+use  misc.encoding.base64
+set KEY 1.1_HEXd
+set MODE e
+run
+
+
+# 2. Fixed XOR
+# load data
+use tb.insert
+set KEY 1.2_1
+set VALUE 1c0111001f010100061a024b53535009181c
+run
+set KEY 1.2_2
+set VALUE 686974207468652062756c6c277320657965
+run
+# unhex
+use misc.encoding.hex
+set KEY 1.2_1
+set MODE d
+run
+use misc.encoding.hex
+set KEY 1.2_2
+set MODE d
+run
+# xor it
+use crypto.xor
+set KEY1 1.2_1_HEXd
+set KEY2 1.2_2_HEXd
+run
+
+
+
+# 3. Single-byte XOR cipher
+# load data
+use tb.insert
+set KEY 1.3
+set VALUE 1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736
+run
+# insert some character
+set KEY 1.3_A
+set VALUE n
+run
+# unhex
+use misc.encoding.hex
+set KEY 1.3
+set MODE d
+run
+# xor to get ascii
+use crypto.xor
+set KEY1 1.3_HEXd
+set KEY2 1.3_A
+run
+# get keysize
+
+
+
+
+# load english etaoin into TB
+use crypto.frequency.etaoins
+set LANG en
+set KEY ETAOIN
+run
+# get etaoin for actual string
+use crypto.frequency.sorted
+set TEXTKEY 1.3_HEXd
+set SORTEDKEY 1.3_SORTED
+run
+# XOR english and new etaoin to get XORing character
+use crypto.xor
+set KEY1 1.3_HEXd
+set KEY2 1.3_SORTED
+run
+# NOT WORKING!!!!!!!!!!!!!!!!!!!!
+
+
+# 4. Detect single-character XOR
+# 5. Implement repeating-key XOR
+# 6. Break repeating-key XOR
+# 7. AES in ECB mode
+# 8. Detect AES in ECB mode
+
