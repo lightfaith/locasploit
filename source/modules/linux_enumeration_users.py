@@ -8,7 +8,7 @@ class Module(GenericModule):
         ]
         
         self.name = 'linux.enumeration.users'
-        self.short_description = 'This module dumps info about users.'
+        self.short_description = 'Dumps info about users.'
         self.references = [
         ]
         self.date = '2016-08-11'

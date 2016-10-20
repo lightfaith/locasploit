@@ -58,6 +58,7 @@ Tired of the comments? Check the "basic" module.
     def reset_parameters(self):
         # Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used. Do not use spaces.
         # Always define SILENT parameter and do not print anything (except cricital errors) if SILENT==yes - this is for intermodular calls
+        # Check boolean values using positive() and negative() functions, so user can choose between multiple possible answers (e.g. yes, true, 1, +, ...)
         self.parameters = {
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'), # usually set automatically; '/' - local system
@@ -88,7 +89,8 @@ Tired of the comments? Check the "basic" module.
         silent = positive(self.parameters['SILENT'].value)
         # # # # # # # #
         # Define your code here
-        log.ok('Template module says: "Hello World!"')
+        if not silent:
+            log.ok('Template module says: "Hello World!"')
         # # # # # # # #
         # If the module should terminate, return None. If it should run in the background, return the instance of the thread (see thread.py template).
         return None 

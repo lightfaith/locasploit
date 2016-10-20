@@ -1,4 +1,6 @@
+#
 # load words into TB
+#
 use tb.readfile
 set INPUTFILE ./data/lotr_en.txt
 set KEY LOTR_EN
@@ -10,7 +12,10 @@ set INPUTFILE ./data/lotr_cz_ascii.txt
 set KEY LOTR_CZ_ASCII
 run
 
+#
 # move words from TB to dict DB
+#
+
 use crypto.words.upload
 set KEY LOTR_EN
 set TAG LOTR_EN
@@ -22,7 +27,9 @@ set KEY LOTR_CZ_ASCII
 set TAG LOTR_CZ_ASCII
 run
 
+#
 # run the analysis
+#
 use crypto.language
 set TAGS LOTR_EN LOTR_CZ
 # set LANGS CZ EN CZ_ASCII

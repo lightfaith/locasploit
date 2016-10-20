@@ -129,6 +129,8 @@ class Scheduler(threading.Thread):
         self.lock.acquire()
         if int(jid) in self.jobs:
             self.jobs[int(jid)].job.stop()
+        else:
+            print('[-] no jobid %s' % jid)
         self.lock.release()
 
 

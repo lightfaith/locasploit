@@ -1,0 +1,13 @@
+#
+# scan binary file
+#
+use iot.binwalk.scan
+setg BINFILE ./data/DVRF.bin
+run
+#
+# extract contents
+#
+use iot.binwalk.extract
+set TMPDIR /tmp/dvrf/
+run
+

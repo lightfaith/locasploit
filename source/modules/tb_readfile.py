@@ -62,7 +62,7 @@ Any existing data under this key will be overwritten.
         inputfile = self.parameters['INPUTFILE'].value
         activeroot = self.parameters['ACTIVEROOT'].value
         key = self.parameters['KEY'].value
-        f = io.read_file(activeroot, inputfile, dbfile=False)
+        f = io.read_file(activeroot, inputfile, usedb=False)
         if f == IO_ERROR:
             log.err('Cannot access \'%s\'.' % (inputfile))
             return None

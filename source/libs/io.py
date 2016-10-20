@@ -10,6 +10,8 @@ def get_fullpath(system, path):
         if path.startswith('./') or  path.startswith('../') or path.startswith('.\\') or path.startswith('..\\'): # enable relative path also
             return path
         else:
+            while path.startswith('/'):
+                path = path[1:]
             return os.path.join(system, path)
     else: 
         # NOT IMPLEMENTED
@@ -17,7 +19,6 @@ def get_fullpath(system, path):
 
 #def read_file(system, path, dbfile=True, utf8=False):
 def read_file(system, path, usedb=False):
-    # Always UTF-8... is that OK?
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
         return IO_ERROR
@@ -26,8 +27,12 @@ def read_file(system, path, usedb=False):
         return IO_ERROR
     
     if system.startswith('/'): # local or sub
-        with open(fullpath, 'r', encoding='utf-8') as f:
-            result = f.read()
+        try:
+            with open(fullpath, 'r', encoding='utf-8') as f:
+                result = f.read()
+        except: # a binary file?
+            with open(fullpath, 'rb') as f:
+                result = f.read()
                 
         if usedb == True or usedb == DBFILE_NOCONTENT:
             fileinfo = get_file_info(system, path)
@@ -162,4 +167,28 @@ def get_file_type_char(mask):
             return chars[i]
     return '?'
 
-
+def get_system_type_from_active_root(activeroot):
+    if activeroot == '/':
+        return sys.platform
+    #
+    # check db if the system is known
+    #
+    
+    #
+    # new system - detect it and write into db
+    #
+    
+    # chroot or similar?
+    if activeroot.startswith('/'):
+        # linux should have some folders in / ...
+        success = 0
+        linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', 'lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
+        for folder in linux_folders:
+            if can_read(activeroot, folder):
+                success += 1
+        if float(success)/len(linux_folders) > 0.7: # this should be linux
+            #TODO write into DB
+            return linux
+        
+    #TODO NOT IMPLEMENTED
+    return 'unknown'

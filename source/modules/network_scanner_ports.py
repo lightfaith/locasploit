@@ -57,7 +57,7 @@ This module uses scapy to provide popular port enumeration methods. namely:
         result = CHECK_SUCCESS
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
-        if not command_exists('scapy'):
+        if not command_exists('scapy'): # TODO ACTIVEROOT
             if not silent:
                 log.err('Scapy is needed to run this module.')
             result = CHECK_FAILURE

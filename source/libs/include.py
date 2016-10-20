@@ -6,6 +6,7 @@ import source.libs.define as lib
 import source.libs.scheduler
 from source.libs.db import *
 import source.libs.log as log
+from source.libs.io import get_system_type_from_active_root
 
 def exit_program(signal, frame):
     log.attachline()
@@ -140,19 +141,23 @@ def get_address_from_active_root(activeroot):
         return rest
     # NOT IMPLEMENTED
     return None
-    
+"""    
+# now in source.libs.io
 def get_system_type_from_active_root(activeroot):
     if activeroot == '/':
         return sys.platform
     # for remote systems check database, else return 'unknown' (appropriate module must get the answer then)
     # NOT IMPLEMENTED
     return 'unknown'
-
+"""
 def get_local_uuid():
     if sys.platform.startswith('lin'):
         partition = command("cat /etc/mtab | grep ' / ' | cut -d' ' -f1").splitlines()[0].decode('utf-8')
-        uuid = [x[6:-1] for x in source.libs.include.command('blkid | grep %s' % (partition)).decode('utf-8').split(' ') if x.startswith('UUID="')][0]
-        return uuid
+        uuids = [x[6:-1] for x in source.libs.include.command('blkid | grep %s' % (partition)).decode('utf-8').split(' ') if x.startswith('UUID="')]
+        if len(uuids) > 0:
+            return uuids[0]
+        else:
+            return 'unknown'
     elif sys.platform.startswith('win'):
         systemdrive = lib.global_parameters['SYSTEMROOT'][0]
         uuid = command('mountvol %c: /L' % (systemdrive)).decode('utf-8')

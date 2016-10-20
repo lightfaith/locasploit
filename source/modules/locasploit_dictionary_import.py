@@ -80,7 +80,7 @@ Words from a wordlist file are imported into locasploit database.
         dic = self.parameters['DICT'].value
         inputfile = self.parameters['INPUTFILE'].value
         # # # # # # # #
-        f = io.read_file(activeroot, inputfile, dbfile=False)
+        f = io.read_file(activeroot, inputfile, usedb=False)
         if f == IO_ERROR:
             log.err('Cannot access \'%s\'.' % (inputfile))
             return None

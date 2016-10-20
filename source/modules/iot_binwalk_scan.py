@@ -37,9 +37,10 @@ Performs a binwalk on a file.
 
     def reset_parameters(self):
         self.parameters = {
-            'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
+            'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
+			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             #'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
-            'PATH': Parameter(mandatory=True, description='File to analyze'),
+            'BINFILE': Parameter(mandatory=True, description='File to analyze'),
         }
 
     def check(self, silent=None):
@@ -63,7 +64,8 @@ Performs a binwalk on a file.
         #    return None
         try:
             # Perform a signature scan against the files specified on the command line and suppress the usual binwalk output.
-            for module in binwalk.scan(self.parameters['PATH'].value, signature=True, quiet=True):
+            path = io.get_fullpath(self.parameters['ACTIVEROOT'].value, self.parameters['BINFILE'].value)
+            for module in binwalk.scan(path, signature=True, quiet=True):
                 #log.writeline('%s Results:' % module.name)
                 if not silent:
                     for result in module.results:

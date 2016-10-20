@@ -44,6 +44,7 @@ This module detects devices by passively listening to the traffic. It needs scap
 
     def reset_parameters(self):
         self.parameters = {
+            'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
             'SILENT': Parameter(value='yes', mandatory=True, description='Suppress the output'),
             'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
             'TIMEOUT' : Parameter(value='30', mandatory=True, description='Number of seconds to listen'),
@@ -54,6 +55,7 @@ This module detects devices by passively listening to the traffic. It needs scap
         result = CHECK_SUCCESS
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
+        root = self.parameters['ACTIVEROOT'].value
         # # # # # # # #
         # check parameteres
         
@@ -65,11 +67,11 @@ This module detects devices by passively listening to the traffic. It needs scap
             return CHECK_FAILURE
         # # # # # # # #
         # check scapy and tcpdump support
-        if not command_exists('scapy'):
+        if not command_exists(root, 'scapy'):
             if not silent:
                 log.err('Scapy is needed to run this module.')
             result = CHECK_FAILURE
-        if not command_exists('tcpdump'):
+        if not command_exists(root, 'tcpdump'):
             if not silent:
                 log.err('Tcpdump is needed to run this module.')
             result = CHECK_FAILURE
@@ -79,6 +81,7 @@ This module detects devices by passively listening to the traffic. It needs scap
         silent = positive(self.parameters['SILENT'].value)
         iface = self.parameters['INTERFACE'].value
 
+        """ # TODO save into DB
         if iface != '' and not lib.kb.exists(('NETWORK INTERFACES %s' % iface).split(' ')):
             # run network.enumeration.interfaces first
             if not silent:
@@ -91,7 +94,11 @@ This module detects devices by passively listening to the traffic. It needs scap
         if iface != '' and not lib.kb.exists(('NETWORK INTERFACES %s' % iface).split(' ')):
             log.err('Interface \'%s\' does not exist.' % iface)
             return None
-            
+        """
+        
+
+
+
         # # # # # # # #
         t = Thread(silent, int(self.parameters['TIMEOUT'].value), iface)
         t.start()
@@ -121,8 +128,11 @@ class Thread(threading.Thread):
         else:
             self.scapy.sniff(iface=self.iface, prn=self.process, filter='ip or arp', store=0, timeout=self.timeout, stopper=self.stopper)
         # update knowledge base
+        #TODO db
+        """
         for x in self.hosts:
             lib.kb.add('NETWORK HOSTS %s' % (x), self.hosts[x])
+        """
 
     # terminates the thread
     def stop(self):

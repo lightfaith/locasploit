@@ -44,7 +44,7 @@ This module just runs for a specified time.
     def check(self, silent=None):
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
-        # check parameteres
+        # check parameters
         silent = positive(self.parameters['SILENT'].value)
         if not positive(self.parameters['BACKGROUND'].value) and not negative(self.parameters['BACKGROUND'].value):
             if not silent:
@@ -57,7 +57,7 @@ This module just runs for a specified time.
         return CHECK_SUCCESS
     
     def run(self):
-        
+        silent = positive(self.parameters['SILENT'].value) 
         # # # # # # # #
         t = Thread(silent, int(self.parameters['TIMEOUT'].value))
         t.start()
@@ -81,6 +81,8 @@ class Thread(threading.Thread):
             log.info('You have %d seconds.' % (self.timeout))
         while self.timeout > 0:
             self.timeout -= 1
+            if self.terminate:
+                break
             time.sleep(1)
         if not self.silent:
             log.ok('Time\'s up!')
