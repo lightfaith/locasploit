@@ -5,6 +5,7 @@ use tb.readfile
 set INPUTFILE ./data/rot_cipher.txt
 set KEY CAESAR
 run
+back
 tb
 #
 # try some ROT deciphering
@@ -13,12 +14,14 @@ use crypto.rot
 set KEY CAESAR
 set SILENT yes
 run
+back
 tb
 #
 # put it in the db
 #
 use crypto.words.upload
 run
+back
 
 
 #

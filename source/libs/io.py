@@ -186,9 +186,9 @@ def get_system_type_from_active_root(activeroot):
         for folder in linux_folders:
             if can_read(activeroot, folder):
                 success += 1
-        if float(success)/len(linux_folders) > 0.7: # this should be linux
+        if success/len(linux_folders) > 0.5: # this should be linux
             #TODO write into DB
-            return linux
+            return 'linux'
         
     #TODO NOT IMPLEMENTED
     return 'unknown'

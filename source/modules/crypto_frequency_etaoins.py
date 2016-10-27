@@ -26,7 +26,7 @@ class Module(GenericModule):
         }
         
         self.description = """
-This module writes language-specific ETAOIN into Temporary base.MIMEBase
+This module writes language-specific ETAOIN into Temporary base.
 'ETAOIN' is a string of characters sorted by their frequency (and then ASCII value) of occurence for a given language.
 Known languages: [%s]""" % (' '.join(self.etaoins.keys()))
         self.db_access = [

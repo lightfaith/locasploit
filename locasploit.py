@@ -13,7 +13,7 @@ parser.add_argument('-c', type=str, help = 'Load the specified configuration fil
 try:
     args = parser.parse_args()
 except SystemExit:
-    exit_program(None, None)
+    exit_program(-1, None)
 
 
 

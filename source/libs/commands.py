@@ -11,13 +11,32 @@ def execute_command(command):
     command = command.strip()
     lib.command_history.append(command)
 
-    # exit
-    if command.lower() in QUIT_STRINGS:
-        log.warn('Do you really want to quit? ', end=False)
-        if positive(input()):
-            exit_program(None, None)
+    # any $variables present? replace it with tb (or global parameter) value
+    newcommand = []
+    parts = command.split(' ')
+    for part in parts:
+        if part.startswith('$'):
+            # key present?
+            if part[1:] in tb.keys():
+                newcommand.append(tb[part[1:]])
+            elif part[1:] in global_parameters.keys():
+                newcommand.append(global_parameters[part[1:]])
+            else:
+                log.err('Key \'%s\' is not present in Temporary Base or Global Parameters.' % (part[1:]))
+                pass
         else:
-            lib.command_history.pop()
+            # escaped $?
+            if part.startswith('\$'):
+                part = part[1:]
+            newcommand.append(part)
+    command = ' '.join(newcommand)
+
+    # OK, what to do?
+
+    # system command
+    if command.startswith('!'):
+        result = cmd(command[1:])
+        log.writeline(result)
     
     # help
     elif command == 'help':
@@ -121,9 +140,13 @@ def execute_command(command):
         lib.active_module = None
 
     # use previous module
-    elif command == 'previous':
-        if len(lib.module_history)>1:
-            set_module(lib.module_history[-2])
+    elif command in ['prev', 'previous']:
+        if lib.active_module is None:
+            if len(lib.module_history)>0:
+                set_module(lib.module_history[-1])
+        else:
+            if len(lib.module_history)>1:
+                set_module(lib.module_history[-2])
     
     # module info
     elif command == 'info':
@@ -153,9 +176,11 @@ def execute_command(command):
         except ValueError:
             log.err('Parameters are set differently.')
             return
+        # are there both key and value?
         if spaceindex <= 0 or spaceindex == len(command[5:])-1:
             log.err('Parameters are set differently.')
         else:
+            # get key and value
             parts = [command[5:5+spaceindex].strip(), command[5+spaceindex:].strip()]
             lib.global_parameters[parts[0]]=parts[1]
             if lib.active_module is not None and parts[0] in lib.active_module.parameters:
@@ -182,9 +207,11 @@ def execute_command(command):
             return
         if lib.active_module is None:
             log.warn('Choose a module first.')
+        # are there both key and value?
         elif spaceindex <= 0 or spaceindex == len(command[4:])-1:
             log.err('Parameters are set differently.')
         else:
+            # get key and value
             parts = [command[4:4+spaceindex].strip(), command[4+spaceindex:].strip()]
             if parts[0] in lib.active_module.parameters:
                 lib.active_module.parameters[parts[0]].value=parts[1]
@@ -281,6 +308,7 @@ def execute_command(command):
         for h in lib.module_history:
             log.writeline(h)
 
+    # print temporary base
     elif command == 'tb':
         maxlen = 80
         maxk = max([len(k) for k in lib.tb.keys()] + [3])
@@ -298,21 +326,40 @@ def execute_command(command):
             if len(valpart) > maxlen:
                 valpart = valpart[:maxlen-3]+'...'
             log.attachline('%-*s  %s' % (maxk, key, valpart))
-
+    
+    # tb delete key
     elif command[:6] == 'tb del':
         if len(command)>7 and command[6] == ' ':
-            #lib.tb.delete(command[7:])
-            del lib.tb[command[7:]]
+            if command[7:] in lib.tb.keys():
+                #lib.tb.delete(command[7:])
+                del lib.tb[command[7:]]
         else:
             #lib.tb.delete()
             lib.tb = {}
 
+    # tb specific value
     elif command[:3] == 'tb ':
-        key = command[3:]
-        if key in tb:
-            log.attachline(tb[key])
-        else:
-            log.err('Key \'%s\' does not exist in TB.' % (key))
+        keys = command[3:].split(' ')
+        value = lib.tb
+        for key in keys:
+            try:
+                # if not present, try int
+                if key not in value and key.isdigit():
+                    key = int(key)
+                value = value[key]
+            except:
+                log.err('Non existent key \'%s\'' % command[3:])
+                break
+        
+        log.attachline(value)
+        
+        #key = command[3:]
+        #if key in tb:
+        #    log.attachline(tb[key])
+        #else:
+        #    log.err('Key \'%s\' does not exist in TB.' % (key))
+
+    # jobs
     elif command == 'jobs':
         lib.scheduler.show()
 
@@ -423,6 +470,15 @@ def execute_command(command):
                 outs[i+1] = vals[i]
         print(outs)
         print('-' * 20)
+    
+    # exit
+    elif command.lower() in QUIT_STRINGS:
+        log.warn('Do you really want to quit? ', end=False)
+        if positive(input()):
+            exit_program(None, None)
+        else:
+            lib.command_history.pop()
+    
     # something else
     else:
         log.warn('Bad command "%s".' % (command))
@@ -614,7 +670,8 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
 
 def print_help():
     commands = [
-        ('exit, exit(), quit, quit(), q', 'exit the program'),
+        ('$key', 'use variable value (from Temporary Base (preferably) or Global Parameters)'),
+        ('!touch /tmp/file', 'run system command'),
         ('help', 'print this help'),
         ('list, ls', 'show all modules ordered by name'),
         ('list date, ls date', 'show all modules ordered by date'),
@@ -639,8 +696,8 @@ def print_help():
         ('history', 'show command history'),
         ('module_history', 'show history of selected modules'),
         ('tb', 'show the Temporary Base'),
-        ('tb a b', 'show content of TB > a > b'),
-        ('tb del a b', 'delete content of TB > a > b'),
+        ('tb a 1', 'show content of TB > a > 1'),
+        ('tb del a', 'delete content of TB > a'),
         ('jobs', 'show jobs in background'),
         ('jobs kill 1', 'kill background job #1'),
         ('session', 'show number of actual session'),
@@ -649,6 +706,7 @@ def print_help():
         # ('session del 1', 'delete session #1'),
         ('authors', 'show information about authors'),
         ('dict', 'list available dictionaries'),
+        ('exit, exit(), quit, quit(), q', 'exit the program'),
         ('# comment', 'comment (nothing will happen)'),
     ]
     maxc = max([7] + [len(x) for x, y in commands])

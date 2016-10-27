@@ -4,10 +4,11 @@
 use iot.binwalk.scan
 setg BINFILE ./data/DVRF.bin
 run
+back
 #
 # extract contents
 #
 use iot.binwalk.extract
 set TMPDIR /tmp/dvrf/
 run
-
+back

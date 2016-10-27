@@ -9,6 +9,10 @@ import source.libs.log as log
 from source.libs.io import get_system_type_from_active_root
 
 def exit_program(signal, frame):
+    if signal == -1: # immediate termination due to -h or bad parameter
+        lib.scheduler.stop()
+        sys.exit(0)
+    
     log.attachline()
     log.info('Killing all the threads...')
     # stop the scheduler (will stop all threads)
@@ -73,6 +77,7 @@ def load_dicts():
 def natural_sort(data):
     return sorted(data, key=lambda x: [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', x)])
 
+#TODO make it working with ACTIVEROOT
 def command(provided_command, value=False, stdout=True):
     """ Run a given command """
     sp = subprocess.Popen(provided_command, shell=True, env={'PATH': os.environ['PATH']}, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -132,7 +137,7 @@ def is_admin(user=lib.global_parameters['USER'], activeroot='/'):
 
 
 def get_address_from_active_root(activeroot):
-    if activeroot == '/':
+    if activeroot.startswith('/'):
         return '127.0.0.1'
     if activeroot[:6] in ['ssh://', 'ftp://']:
         rest = activeroot[6:]

@@ -69,8 +69,9 @@ class Module(GenericModule):
             return None
         info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package:', 'Status:', 'Version'))]
         results = [(info[i], info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
-        for i in range(10):
-            print(results[i])
+        if not silent:
+            for result in results:
+                log.info(result)
         if not silent:
             log.ok('%d packages revealed.' % (len(results)))
         return None

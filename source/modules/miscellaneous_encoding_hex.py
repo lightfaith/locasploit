@@ -21,7 +21,7 @@ class Module(GenericModule):
             'hex',
         ]
         self.description = """
-This module performs hex encoding/decoding.
+This module performs hex encoding/decoding (using form '1415dead08beef69').
 Resulting value will be inserted into Temporary base under the key '<KEY>_HEXe' or '<KEY>_HEXd', respectively.
 Any existing value will be overwritten.
 """
@@ -76,15 +76,21 @@ Any existing value will be overwritten.
         mode = self.parameters['MODE'].value
         
         if mode == 'e':
-            estr = bytearray.fromhex(tb[key]).encode()
-            if not silent:
-                log.ok('%s_HEXe = %s' % (key, estr))
-            tb['%s_HEXe' % (key)] = estr
+            try:
+                estr = bytearray.fromhex(tb[key]).encode()
+                if not silent:
+                    log.ok('%s_HEXe = %s' % (key, estr))
+                tb['%s_HEXe' % (key)] = estr
+            except:
+                log.err('Problem encoding %s.' % key)
         elif mode == 'd':
-            dstr = bytearray.fromhex(tb[key]).decode()
-            if not silent:
-                log.ok('%s_HEXd = %s' % (key, dstr))
-            tb['%s_HEXd' % (key)] = dstr
+            try:
+                dstr = bytearray.fromhex(tb[key]).decode()
+                if not silent:
+                       log.ok('%s_HEXd = %s' % (key, dstr))
+                tb['%s_HEXd' % (key)] = dstr
+            except:
+                log.err('Problem decoding %s.' % key)
         # # # # # # # #
         return None
     

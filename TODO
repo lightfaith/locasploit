@@ -4,9 +4,20 @@ DONE:		module use by best match
 			delete_dictionary()
 			apply setg to current module
 			is_admin() for any user and activeroot
+			!command
+			setg PARAM $VARIABLE (from TB) - for every command
+			tb del a b 0
 PARTIALLY:	kb->db
-TODO:		SYSTEMID for linux.* modules
+TODO:		ACTIVEROOT for linux.* modules
 			dict exports different SHA1
 			check/fix silent in modules
 			delete session (module?)
-			
+
+			http://www.nsrl.nist.gov/Downloads.htm
+			https://nvd.nist.gov/download.cfm
+			http://cve.mitre.org/data/refs/refmap/source-EXPLOIT-DB.html
+
+totest: NAS (Synology), buffalo - nas-central.org
+		tplink
+14d
+

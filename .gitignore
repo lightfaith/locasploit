@@ -75,3 +75,8 @@ source/modules/private_*.py
 
 # obsolete modules
 source/modules/obsolete_*.py
+
+# big unchanged dictionaries
+dictionaries/
+dict.db
+
