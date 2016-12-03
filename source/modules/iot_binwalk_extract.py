@@ -41,7 +41,8 @@ Extracts components of a .bin file.
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             #'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
             'BINFILE': Parameter(mandatory=True, description='File to analyze'),
-            'TMPDIR' : Parameter(mandatory=True, description='Directory to store files into')
+            'TMPDIR' : Parameter(mandatory=True, description='Directory to store files into'),
+            'CLEAN' : Parameter(value='yes', mandatory=True, description='Delete carved files after extraction'),
         }
 
     def check(self, silent=None):
@@ -62,7 +63,7 @@ Extracts components of a .bin file.
         # binfile exists?
         if not io.can_read(activeroot, binfile):
             if not silent:
-                log.err('Cannot access bin file \'%s\'.' % ())
+                log.err('Cannot access bin file \'%s\'.' % (binfile))
                 result = CHECK_FAILURE
         # tmp directory exists (or can be created)?
         try:
@@ -97,11 +98,12 @@ Extracts components of a .bin file.
 
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
+        clean = positive(self.parameters['CLEAN'].value)
         import binwalk
         try:
             path = io.get_fullpath(self.parameters['ACTIVEROOT'].value, self.parameters['BINFILE'].value)
             for module in binwalk.scan(path, **{'signature' : True, 'quiet' : True, 
-                'extract' : True, 'directory' : self.parameters['TMPDIR'].value, 'matryoshka' : True}):
+                'extract' : True, 'directory' : self.parameters['TMPDIR'].value, 'matryoshka' : True, 'rm': clean}):
                 pass
         except binwalk.ModuleException as e:
             log.err(str(e))

@@ -59,7 +59,7 @@ This module just runs for a specified time.
     def run(self):
         silent = positive(self.parameters['SILENT'].value) 
         # # # # # # # #
-        t = Thread(silent, int(self.parameters['TIMEOUT'].value))
+        t = Thread(silent, int(self.parameters['TIMEOUT'].value), self.parameters['MESSAGE'].value)
         t.start()
         if positive(self.parameters['BACKGROUND'].value):
             return t
@@ -69,11 +69,12 @@ This module just runs for a specified time.
     
         
 class Thread(threading.Thread):
-    def __init__(self, silent, timeout):
+    def __init__(self, silent, timeout, message):
         threading.Thread.__init__(self)
         self.silent = silent
         self.timeout = timeout
         self.terminate = False
+        self.message = message
             
     # starts the thread
     def run(self):
@@ -85,7 +86,7 @@ class Thread(threading.Thread):
                 break
             time.sleep(1)
         if not self.silent:
-            log.ok('Time\'s up!')
+            log.ok(self.message)
 
     # terminates the thread
     def stop(self):

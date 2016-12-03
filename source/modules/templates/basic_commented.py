@@ -3,8 +3,10 @@ from source.modules._generic_module import *
 
 # File should be named according to its name (it is not mandatory, but it is good for clarity). It must have a .py extension.
 # It would be cool if you follow naming conventions:
+        #   analysis_*    - modules performing complex analysis of something (possibly using other modules)
         #   locasploit_*  - modules operating on locasploit itself (like dict import etc.)
         #   private_*     - (test) modules which are not supposed to be published (ignored by Git automatically)
+        #   report_*      - modules generating nice PDF (and other) reports
 
 class Module(GenericModule):
     def __init__(self):
@@ -13,7 +15,7 @@ class Module(GenericModule):
             Author(name='', email='', web=''),
         ]
         
-        # Name must be unique and should be in dot notation (e.g. linux.enumeration.distribution).
+        # Module name must be unique and should be in dot notation (e.g. linux.enumeration.distribution).
         # For clarity, the file name should be the same, with dots replaced by underscores (_) and .py extension. 
         # Do not use search symbols (brackets, ~, |, &)
         
@@ -28,13 +30,13 @@ class Module(GenericModule):
         self.date = '2999-12-31'
         # You can define the license of the module here.
         self.license = 'GNU GPLv2'
-        # If any change is made after the publishing, you must change the version.
+        # If any change affecting functionality or output is made after publishing, you must change the version.
         self.version = '0.0'
         # Tags are useful for searching. Do not use search keywords and symbols (and, not, or, &, |, !, brackets)
         self.tags = [
             'template',
         ]
-        # This is long description. You can (and should) write anything important and useful here.  You should define what the module does, what files it access and whether it can do harm.
+        # This is long description. You can (and should) write anything important and useful here. You should define what the module does, what files it access and whether it can do harm.
         self.description = """
 This module is designed to be used as a template for new modules. 
 Tired of the comments? Check the "basic" module.
@@ -53,12 +55,13 @@ Tired of the comments? Check the "basic" module.
         self.changelog = """
 """
 
-        self.reset_parameters() # do not touch this
+        self.reset_parameters() # just leave it here
 
     def reset_parameters(self):
         # Define module parameters here. You should use UPPERCASE letters as a name. If value is not inialized and a global parameter with the same name exists, its value is used. Do not use spaces.
-        # Always define SILENT parameter and do not print anything (except cricital errors) if SILENT==yes - this is for intermodular calls
+        # Always define SILENT parameter and do not print anything (except cricital errors) if positive(self.parameters['SILENT'].value) - this is for intermodular calls.
         # Check boolean values using positive() and negative() functions, so user can choose between multiple possible answers (e.g. yes, true, 1, +, ...)
+
         self.parameters = {
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'), # usually set automatically; '/' - local system
@@ -73,14 +76,14 @@ Tired of the comments? Check the "basic" module.
         # CHECK_FAILURE       - module cannot be executed (missing files, bad parameters etc.)
         
         # Check is performed automatically before the module is executed. 
-        # Do not use any dependencies.
+        # Do not use any dependencies. # TODO why?
         # If the module is not meant to run as silent, you should print error and warning messages.
         # Do not print any other messages.
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
         result = CHECK_NOT_SUPPORTED
-        # You should not return CHECK_FAILURE, set result = CHECK_FAILURE and then return result instead.
-        # This way user can see all problems at once.
+        # You should not "return CHECK_FAILURE", set "result = CHECK_FAILURE" and then "return result" instead.
+        # This allows user to see all problems at once.
         return result
     
     def run(self):
@@ -96,4 +99,4 @@ Tired of the comments? Check the "basic" module.
         return None 
     
 
-lib.module_objects.append(Module())
+lib.module_objects.append(Module()) # just leave it here

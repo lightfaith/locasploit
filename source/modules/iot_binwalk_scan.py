@@ -38,7 +38,7 @@ Performs a binwalk on a file.
     def reset_parameters(self):
         self.parameters = {
             'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
-			'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
+            'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             #'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
             'BINFILE': Parameter(mandatory=True, description='File to analyze'),
         }

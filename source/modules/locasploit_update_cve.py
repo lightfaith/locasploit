@@ -99,8 +99,8 @@ class Thread(threading.Thread):
         #              check sum
         #              update if needed
         #
-        # else:        download everything from last CVE's year to present year
-        #              update everything
+        # else:        download everythingr
+        #              update years where sha1 does not match
         #              get actual checksum of 'modified'
     # terminates the thread
     def stop(self):

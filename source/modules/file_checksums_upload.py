@@ -46,14 +46,8 @@ This module computes MD5 and SHA1 checksums of a given file and stores these res
             silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
         inputfile = self.parameters['INPUTFILE'].value
-        # can import hashlib?
         result = CHECK_SUCCESS
-        try:
-            import hashlib
-        except:
-            if not silent:
-                log.err('Cannot import hashlib.')
-            result = CHECK_FAILURE
+        
         # can read file?
         if not io.can_read(activeroot, inputfile):
             if not silent:
@@ -67,13 +61,14 @@ This module computes MD5 and SHA1 checksums of a given file and stores these res
         tag = self.parameters['TAG'].value
         inputfile = self.parameters['INPUTFILE'].value
         # # # # # # # #
-        import hashlib
-        content = io.read_file(activeroot, inputfile, False)
-        if isinstance(content, str):
-            content = content.encode('utf-8')
-        md5 = hashlib.md5(content).hexdigest()
+        #content = io.read_file(activeroot, inputfile, usedb=False)
+        #if isinstance(content, str):
+        #    content = content.encode('utf-8')
+        md5 = io.md5(activeroot, inputfile)
+        sha1 = io.sha1(activeroot, inputfile)
+        sha256 = io.sha256(activeroot, inputfile)
         sha1 = hashlib.sha1(content).hexdigest()
-        result = db['checksum'].add_tmp_checksum(tag, md5, sha1)
+        result = db['checksum'].add_tmp_checksum(tag, md5, sha1, sha256)
         if result == DB_ERROR:
             log.err('Cannot access database.')
         else:
@@ -81,6 +76,7 @@ This module computes MD5 and SHA1 checksums of a given file and stores these res
                 log.ok('Checksums for \'%s\' successfully acquired:' % (inputfile))
                 log.writeline('MD5:  %s' % md5)
                 log.writeline('SHA1: %s' % sha1)
+                log.writeline('SHA256: %s' % sha256)
         return None 
     
 

@@ -22,8 +22,7 @@ class Module(GenericModule):
             'export',
             'database'
         ]
-        self.description = """
-Words from a wordlist file are imported into locasploit database.
+        self.description = """Specified dictionary is deleted.
 """
         
         self.db_access = [
@@ -68,7 +67,10 @@ Words from a wordlist file are imported into locasploit database.
         silent = positive(self.parameters['SILENT'].value)
         dic = self.parameters['DICT'].value
         # # # # # # # #
-        result = db['dict'].delete_dictionary(dic)
+        if dic=='':
+            result = db['dict'].delete_dictionaries()
+        else:
+            result = db['dict'].delete_dictionary(dic)
         if result == DB_ERROR:
             if not silent:
                 log.err('Cannot delete dictionary \'%s\'.' % (dic))

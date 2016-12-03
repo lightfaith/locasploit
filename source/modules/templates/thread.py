@@ -76,6 +76,7 @@ class T(threading.Thread):
         self.terminate = False
     
     def run(self):
+        # stop executing if self.terminate
         pass
         
     def stop(self):

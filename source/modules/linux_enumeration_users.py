@@ -22,7 +22,7 @@ class Module(GenericModule):
         ]
         
         
-        self.description = ''
+        self.description = 'This module dumps /etc/passwd info and writes results into database.'
         self.db_access = [
         'USER', #'GROUP', 'UG',
         ]
@@ -80,7 +80,7 @@ class Module(GenericModule):
         if result == DB_ERROR:
             log.err('Cannot insert users into database.')
         if not silent:
-            log.ok('%d users added/updated.' % (len(users)))
+            log.ok('%d users found.' % (len(users)))
         return None
 
 lib.module_objects.append(Module())

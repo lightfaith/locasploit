@@ -80,11 +80,14 @@ Words from a wordlist file are imported into locasploit database.
         dic = self.parameters['DICT'].value
         inputfile = self.parameters['INPUTFILE'].value
         # # # # # # # #
+          # get hash from binary
+        f = io.read_file(activeroot, inputfile, usedb=False, forcebinary=True)
+        checksum = hashlib.sha1(f).hexdigest()
+        #
         f = io.read_file(activeroot, inputfile, usedb=False)
         if f == IO_ERROR:
             log.err('Cannot access \'%s\'.' % (inputfile))
             return None
-        checksum = hashlib.sha1(f.encode('utf-8')).hexdigest()
         words = [w for w in f.splitlines() if w.strip() != '']
         result = db['dict'].add_words(words, dic, checksum)
         if result == DB_ERROR:
