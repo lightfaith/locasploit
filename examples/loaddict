@@ -5,14 +5,12 @@ use locasploit.dictionary.import
 set DICT CZ
 set INPUTFILE /share/python/locasploit/dictionaries/cz.dic
 run
-back
 #
 # import cz_ascii.dic as CZ_ASCII
 #
 set DICT CZ_ASCII
 set INPUTFILE /share/python/locasploit/dictionaries/cz_ascii.dic
 run
-back
 #
 # import en.dic as EN
 #

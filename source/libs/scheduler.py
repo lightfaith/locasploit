@@ -31,7 +31,7 @@ class Scheduler(threading.Thread):
             # BACKGROUND JOBS
             for x in self.jobs: # pinpoint dead background jobs
                 s = self.jobs[x]
-                if not s.job.isAlive():
+                if not s.job.is_alive():
                     todel.append(x)
 
             for x in todel: # remove them
@@ -43,7 +43,7 @@ class Scheduler(threading.Thread):
             # USER THREADS
             todel = []
             for t in self.user_threads: # pinpoint dead user threads
-                if not t.isAlive():
+                if not t.is_alive():
                     todel.append(t)
 
             for t in todel: # remove them

@@ -15,20 +15,22 @@ def exit_program(signal, frame):
     
     log.attachline()
     log.info('Killing all the threads...')
+    
     # stop the scheduler (will stop all threads)
     lib.scheduler.stop()
     # wait for scheduler termination
-    while lib.scheduler.isAlive():
+    while lib.scheduler.is_alive():
         time.sleep(0.1)
     log.info('Cleaning databases...')
     lib.db['dict'].clean()
+    lib.db['vuln'].clean()
     # disconnect from databases
     log.info('Disconnecting from databases...')
     for dbname in lib.db.keys():
         if lib.db[dbname]:
             lib.db[dbname].close()
     log.info('%s out.' % lib.appname)
-    sys.exit(0)
+    sys.exit(0 if signal is None else 1)
 
 # run exit program on SIGINT
 signal.signal(signal.SIGINT, exit_program)

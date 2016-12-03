@@ -31,12 +31,54 @@ def execute_command(command):
             newcommand.append(part)
     command = ' '.join(newcommand)
 
+    # # # # # # # # # 
     # OK, what to do?
-
+    # # # # # # # # #
+    
     # system command
     if command.startswith('!'):
         result = cmd(command[1:])
         log.writeline(result)
+    
+    # test playground
+    elif command == 'test':
+        from reportlab.pdfgen import canvas
+        from reportlab.lib import colors
+        from reportlab.lib.units import cm
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import KeepTogether, SimpleDocTemplate, Table, TableStyle, Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet
+        styles = getSampleStyleSheet()
+        
+        #c = canvas.Canvas('test.pdf')
+        doc = SimpleDocTemplate('test.pdf', pagesize=A4)
+        entries = []
+        for c in cves:
+            if c[3] == '2.0': # CVSS 2.0
+                data = [['', c[0], c[1]+' '+c[2], 'Base:', c[5]], ['', '', '', 'Impact:', c[6]], ['', '', '', 'Exploitability:', c[7]], ['', '', '', 'Score:', c[4]], [Paragraph('<para align=justify>'+c[9]+'</para>', styles['BodyText']), '', '', '', ''], ['', '', '', '']]
+            t = Table(data, colWidths=(0.5*cm, 8*cm, 5*cm, 3*cm, 2*cm))
+            color = colors.yellow # low severity
+            if c[8] == 'Medium':
+                color = colors.orange
+            elif c[8] == 'High':
+                color = colors.lavender
+            t.setStyle(TableStyle([
+                #('GRID', (0, -2), (-1, -2), 0.5, colors.grey),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                #('BACKGROUND', (0, 0), (-1, 3), color),
+                ('BACKGROUND', (0, 0), (0, 3), color),
+                #('LINEBEFORE', (-1, 0), (-1, -3), 1, color),
+                #('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.black),
+                #('LINEABOVE', (0, -2), (-1, -2), 1, colors.black),
+                ('SPAN', (0, -2), (-1, -2)), # description
+                ('SPAN', (1, 0), (1, -3)), # cve
+                ('SPAN', (2, 0), (2, -3)), # package
+            ]))
+            entries.append(KeepTogether(t))
+        doc.build(entries)
+        #c.showPage()
+        #c.save()
+        print('-' * 20)
     
     # help
     elif command == 'help':
@@ -450,26 +492,6 @@ def execute_command(command):
     elif command == '' or command[0] == '#':
         lib.command_history.pop()
         pass
-    
-    elif command == 'test':
-        from source.libs import statistics
-        #msg = "vptnvffuntshtarptymjwzirappljmhhqvsubwlzzygvtyitarptyiougxiuydtgzhhvvmumshwkzgstfmekvmpkswdgbilvjljmglmjfqwioiivknulvvfemioiemojtywdsajtwmtcgluysdsumfbieugmvalvxkjduetukatymvkqzhvqvgvptytjwwldyeevquhlulwpkt"
-        #msg = 'QPWKA LVRXC QZIKG RBPFA EOMFL  JMSDZ VDHXC XJYEB IMTRQ WNMEA IZRVK CVKVL XNEIC FZPZC ZZHKM  LVZVZ IZRRQ WDKEC HOSNY XXLSP MYKVQ XJTDC IOMEE XDQVS RXLRL  KZHOV'
-        msg = "\x1b77316?x\x15\x1b+x413=x9x(7-6<x7>x:9;76"
-        msg = ''.join([chr(ord(x) ^ ord('x')) for x in msg.lower()])
-        print()
-        vals = []
-        for i in range(1, 15):
-            #print(i, statistics.index_of_coincidence(msg, i))
-            vals.append(statistics.index_of_coincidence(msg, i))
-        print(vals)
-        outliers = statistics.outliers(vals, lower=False)
-        outs = {}
-        for i in range(0, len(vals)):
-            if vals[i] in outliers:
-                outs[i+1] = vals[i]
-        print(outs)
-        print('-' * 20)
     
     # exit
     elif command.lower() in QUIT_STRINGS:

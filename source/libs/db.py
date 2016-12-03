@@ -10,15 +10,16 @@ DB_ERROR = lib.DB_ERROR
 
 class DB():
     def __init__(self, file):
-        self.connection = sqlite.connect(file)
+        self.connection = sqlite.connect(file, check_same_thread=False)
         self.cursor = self.connection.cursor()
     
     def close(self):
         self.commit()
         self.connection.close()
     
-    def execute(self, command, parameters=None, commit=True):
+    def execute(self, command, parameters=None, commit=True, ignoreerrors=False):
         try:
+            #print('$', command)
             if parameters is None:
                 self.cursor.execute(command)
             else:
@@ -27,16 +28,18 @@ class DB():
                 self.commit()
             return self.cursor.fetchall()
         except Exception as e:
-            log.err(str(e) + ' -- ' + command)
+            if not ignoreerrors:
+                log.err(str(e) + ' -- ' + command)
             return DB_ERROR
     
-    def executemany(self, command, parameters):
+    def executemany(self, command, parameters, ignoreerrors=False):
         try:
             self.connection.executemany(command, parameters)
             self.commit()
             return True
         except Exception as e:
-            log.err(str(e) + ' for ' + command)
+            if not ignoreerrors:
+                log.err(str(e) + ' for ' + command)
             return DB_ERROR
     
     def query(self, command):
@@ -97,7 +100,7 @@ class DBDictionary(DB):
              {'d' : dict, 'w' : word}, commit=True if word == words[-1] else False)
             if idw == DB_ERROR:
                 return DB_ERROR
-        
+        self.commit() 
         if idw == DB_ERROR:
             return DB_ERROR
         return True
@@ -133,7 +136,13 @@ class DBDictionary(DB):
         self.execute("DELETE FROM DWord WHERE fk_dictionary IN (SELECT dictionaryid FROM Dictionary WHERE name = :d)", {'d': dict})
         self.execute("DELETE FROM Dictionary WHERE name = :d", {'d': dict})
         self.clean()
-    
+   
+    def delete_dictionaries(self):
+        self.execute("DELETE FROM DWord")
+        self.execute("DELETE FROM Word")
+        self.execute("DELETE FROM Dictionary")
+
+
     def clean(self):
         # discard words with no dictionary
         self.execute("DELETE FROM Word WHERE wordid NOT IN (SELECT fk_word FROM DWord)")
@@ -168,6 +177,103 @@ class DBDictionary(DB):
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+class DBVuln(DB):
+    def __init__(self, file):
+        super().__init__(file)
+    
+    def clean(self):
+        # TODO clean temporary table
+        pass
+
+
+    def add_cves(self, cvetuples):
+        attribs = ['name', 'severity', 'CVSS_version', 'CVSS_score', 'CVSS_base_score', 'CVSS_impact_subscore', 'CVSS_exploit_subscore', 'CVSS_vector', 'description']
+        
+        self.execute("BEGIN", commit=False)
+        for cvetuple in cvetuples:
+            # add missing parameters
+            for a in attribs:
+                if a not in cvetuple[0].keys():
+                    cvetuple[0][a] = ''
+            cvetuple[0]['description'] = cvetuple[1]
+            result = self.execute('INSERT OR REPLACE INTO CVE(name, severity, cvss_version, cvss_score, cvss_base, cvss_impact, cvss_exploit, cvss_vector, description) VALUES(:name, :severity, :CVSS_version, :CVSS_score, :CVSS_base_score, :CVSS_impact_subscore, :CVSS_exploit_subscore, :CVSS_vector, :description)', cvetuple[0], commit=False)
+        self.commit() 
+        
+
+
+    def add_apps_for_cves(self, actuples):
+        # (cveid, product, vendor, version)
+        
+        self.execute("BEGIN", commit=False)
+        for cve, product, vendor, version in actuples:
+            cveids = self.execute("SELECT cveid FROM CVE WHERE name=:c", {'c': cve}, commit=False)
+            if len(cveids) == 0:
+                continue
+            self.execute("INSERT OR IGNORE INTO Vendor(name) VALUES(:v)", {'v': vendor}, commit=False, ignoreerrors=True)
+            vendorid = int(self.execute("SELECT vendorid FROM vendor WHERE name=:v", {'v': vendor}, commit=False)[0][0])
+            #print('pushing products')
+            self.execute("INSERT OR IGNORE INTO Product(vendorid, name) VALUES(:vid, :p)", {'vid': vendorid, 'p': product}, commit=False, ignoreerrors=True)
+            productid = int(self.execute("SELECT productid FROM product WHERE vendorid=:vid AND name=:p", {'vid': vendorid, 'p': product}, commit=False)[0][0])
+            #print('pushing versions')
+            self.execute("INSERT OR IGNORE INTO Version(productid, value) VALUES(:pid, :v)", {'pid': productid, 'v': version}, commit=False, ignoreerrors=True)
+            versionid = int(self.execute("SELECT versionid FROM Version WHERE productid=:pid AND value=:v", {'pid': productid, 'v': version}, commit=False)[0][0])
+            #print('pushing relations')
+            self.execute('INSERT OR IGNORE INTO CV(cveid, versionid) VALUES(:cid, :vid)', {'cid': cveids[0][0], 'vid': versionid}, commit=False, ignoreerrors=True)
+            
+        self.commit()
+        return True
+
+    
+    def delete_cves_apps(self):
+        self.execute("BEGIN", commit=False)
+        self.execute("DELETE FROM CV", commit=False)
+        self.execute("DELETE FROM Product", commit=False)
+        self.execute("DELETE FROM Vendor", commit=False)
+        self.execute("DELETE FROM CVE", commit=False)
+        self.commit()
+
+
+    def add_property(self, key, value):
+        result = self.execute("INSERT OR REPLACE INTO Property(key, value) VALUES(:k, :v)", {'k': key, 'v': value})
+        if result == DB_ERROR:
+            return DB_ERROR
+        return True
+
+
+
+    def add_tmp(self, data):
+        self.execute("BEGIN", commit=False)
+        for tag, name, vendor, version in data:
+            result = self.execute("INSERT OR IGNORE INTO Temporary(tag, name, vendor, version) VALUES(:t, :n, :vn, :vr)", {'t': tag, 'n': name, 'vn':vendor, 'vr':version}, commit=False);
+        self.commit()
+        if result == DB_ERROR:
+            return DB_ERROR
+        return True
+
+
+    def count_tmp(self, tag):
+        result = self.execute("SELECT COUNT(*) FROM Temporary WHERE tag = :t", {'t': tag})
+        if result == DB_ERROR:
+            return DB_ERROR
+        return result[0][0]
+
+
+    def get_cves_for_apps(self, tag, checkversion=True):
+        result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name AND version = v.value %s) ORDER BY sort DESC, CVE.name DESC" % ('AND tag = :t' if checkversion else ''), {'t': tag})
+        if result == DB_ERROR:
+            return DB_ERROR
+        return result
+
+    def clean(self):
+        result = self.execute("DELETE FROM Temporary")
+        return result
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 class DBChecksum(DB):
     def __init__(self, file):
         super().__init__(file)
@@ -176,12 +282,12 @@ class DBChecksum(DB):
         # clear temporary table
         self.execute("DELETE FROM Temporary")
     
-    def add_tmp_checksum(self, tag, md5=None, sha1=None):
-        select = self.execute("SELECT * FROM Temporary WHERE tag = :t AND md5 = :m AND sha1=:s", {'t': tag, 'm': md5, 's': sha1})
+    def add_tmp_checksum(self, tag, md5=None, sha1=None, sha256=None):
+        select = self.execute("SELECT * FROM Temporary WHERE tag = :t AND md5 = :m AND sha1=:s1 AND sha256=:s256", {'t': tag, 'm': md5, 's1': sha1, 's256': sha256})
         if select == DB_ERROR:
             return DB_ERROR
         if len(select) == 0:
-            result = self.execute("INSERT OR REPLACE INTO Temporary(tag, md5, sha1) VALUES(:t, :m, :s)", {'t': tag, 'm': md5, 's': sha1})
+            result = self.execute("INSERT OR REPLACE INTO Temporary(tag, md5, sha1, sha256) VALUES(:t, :m, :s1, :s256)", {'t': tag, 'm': md5, 's1': sha1, 's256': sha256})
             if result == DB_ERROR:
                 return DB_ERROR
         return True
@@ -294,7 +400,7 @@ class DBAnalysis(DB):
                 md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
             if sha1 is None:
                 sha1 = hashlib.sha1(content.encode('utf-8')).hexdigest()
-        print(md5, sha1)
+        #print(md5, sha1)
         result = self.execute(
             "INSERT OR REPLACE INTO File(path, fk_systemid, type, permissions, uid, gid, content, atime, mtime, ctime, timestamp, md5, sha1) VALUES(:p, :sid, :t, :perm, :u, :g, :c, :at, :mt, :ct, :ts, :m, :s)", 
             {'p': path, 'sid': systemid, 't': type, 'perm': permissions, 'u': uid, 'g': gid, 'c': content, 'at': atime, 'mt': mtime, 'ct': ctime, 'ts': time.time(), 'm': md5, 's':sha1})
@@ -331,7 +437,7 @@ class DBAnalysis(DB):
         systemid = self.get_systemid(systemroot)
         if systemid == DB_ERROR:
             return DB_ERROR
-        
+
         # what is the structure?
         targs = None
         if type == lib.USERS_UNIX:
@@ -347,14 +453,39 @@ class DBAnalysis(DB):
             return DB_ERROR
         return True
         
-    
+    def get_users(self, systemroot):
+        systemid = self.get_systemid(systemroot)
+        if systemid == DB_ERROR:
+            return []
+        return self.execute("SELECT * FROM User WHERE fk_systemid = :sid", {'sid': systemid})
+
+
     def add_group(self, systemroot, gid, name, comment=None):
         # NOT IMPLEMENTED
         pass
     
+    # CRON
+    def add_cron(self, systemroot, entries):
+        systemid = self.get_systemid(systemroot)
+        self.execute("BEGIN", commit=False)
+        result = True
+        for entry in entries:
+            if len(entry)==3:
+                result = self.execute("INSERT OR IGNORE INTO Cron(fk_systemid, timing, user, command) VALUES(:s, :t, :u, :c)", {'s': systemid, 't': entry[0], 'u': entry[1], 'c': entry[2]}, commit=False)
+                if result == DB_ERROR:
+                    break
+        self.commit()
+        return result
     
+    def get_cron(self, systemroot):
+        systemid = self.get_systemid(systemroot)
+        return self.execute("SELECT timing, user, command FROM Cron WHERE fk_systemid=:s", {'s': systemid})
+
+
 # inicialization
 lib.db = {}
 lib.db['analysis'] = DBAnalysis('analysis.db')
 lib.db['dict'] = DBDictionary('dict.db')
 lib.db['checksum'] = DBChecksum('checksum.db')
+lib.db['vuln'] = DBVuln('vuln.db')
+

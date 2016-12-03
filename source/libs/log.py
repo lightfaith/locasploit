@@ -218,12 +218,22 @@ def err(string='', end=True, dbnote=False):
         lib.db['analysis'].add_note(string, '-', lib.active_session, dbnote=True)
 #   loglock.release()
 
-def threadline():
+"""def threadline():
     # print newline if not main thread and main thread printed last
     global should_newline
     if lib.main_thread is not threading.current_thread() and should_newline:
         should_newline = False
         print('')
+    else:
+        should_newline = True
+"""    
+def threadline():
+    # print newline if not main thread and main thread printed last
+    global should_newline
+    if lib.main_thread is not threading.current_thread():
+        if should_newline:
+            should_newline = False
+            print('')
     else:
         should_newline = True
     
