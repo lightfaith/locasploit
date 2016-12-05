@@ -28,10 +28,6 @@ class Module(GenericModule):
         self.description = """
 This module detects local network interfaces and writes them into the Knowledge Base. It needs 'netifaces' to work.
 """
-        self.db_access = [
-            'NETWORK',
-            'INTERFACES',
-        ]
         
         self.dependencies = {
         }

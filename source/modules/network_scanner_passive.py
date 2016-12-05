@@ -28,11 +28,6 @@ class Module(GenericModule):
         self.description = """
 This module detects devices by passively listening to the traffic. It needs scapy to operate.
 """
-        self.db_access = [
-            'NETWORK',
-            'INTERFACES',
-            'HOSTS',
-        ]
         
         self.dependencies = {
             'network.enumeration.interfaces': '1.0',

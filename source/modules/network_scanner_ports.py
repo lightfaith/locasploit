@@ -36,10 +36,6 @@ This module uses scapy to provide popular port enumeration methods. namely:
     ACK Scan
     Window Scan
 """
-        self.db_access = [
-            'NETWORK',
-            'HOSTS',
-        ]
         
         self.dependencies = {
         }

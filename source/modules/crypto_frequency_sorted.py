@@ -22,8 +22,6 @@ class Module(GenericModule):
 Inserts characters sorted by frequency into TB.
 Existing value will be rewritten.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

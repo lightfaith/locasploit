@@ -23,8 +23,6 @@ class Module(GenericModule):
             'report',
         ]
         self.description = """This module uses reportlab library to generate report of gathered data. Report will be generated on local system."""
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }
@@ -99,8 +97,12 @@ class Module(GenericModule):
         
         # ADD SYSTEM INFO
         entries.append(Paragraph('<para spaceBefore=20>System info<para>', headingstyle))
-        data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_system']]
-        entries.append(Table(data, None, None, hAlign='LEFT'))
+        data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_system']+tb[tag+'_os']]
+        t = Table(data, None, None, hAlign='LEFT')
+        t.setStyle(TableStyle([        
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        entries.append(t)
    
 
         # ADD CRON ENTRIES

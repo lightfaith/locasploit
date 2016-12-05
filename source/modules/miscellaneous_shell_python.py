@@ -24,8 +24,6 @@ class Module(GenericModule):
         self.description = """
 This module uses Python's exec() function to execute any commands. These will run in the context of the framework, so, you know, do not break anything.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

@@ -27,8 +27,6 @@ class Module(GenericModule):
 Allows to run arbitrary queries on connected databases. Changes are commited when this module is terminated.
 
 Connected databases: """ + str(list(db.keys()))
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

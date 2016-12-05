@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-import os,  argparse
+import os, sys, argparse
+
+# chdir
+os.chdir(os.path.dirname(sys.argv[0]))
+
 #import sys, importlib, re
 from source.libs.define import *
 from source.libs.parameters import *
 from source.libs.commands import *
 from source.libs.include import *
 import source.libs.log as log
+
 
 # program arguments
 parser = argparse.ArgumentParser(prog='locasploit', description='Local enumeration and exploitation framework.')

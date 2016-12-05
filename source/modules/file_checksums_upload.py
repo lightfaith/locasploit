@@ -22,10 +22,6 @@ class Module(GenericModule):
 This module computes MD5 and SHA1 checksums of a given file and stores these results in checksum database for further analysis (such as app version detection).
 """
         
-        self.db_access = [
-            'Temporary',
-        ]
-        
         self.dependencies = {
         }
         self.changelog = """

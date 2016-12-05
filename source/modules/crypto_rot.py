@@ -25,10 +25,7 @@ class Module(GenericModule):
 This module performs ROT substitution enciphering.
 Results will be stored in the Temporary base under <KEY>_ROT<x> key.
 Any existing value will be overwritten.
-"""
-        self.db_access = [
-        ]
-        
+"""        
         self.dependencies = {
         }
         self.changelog = """

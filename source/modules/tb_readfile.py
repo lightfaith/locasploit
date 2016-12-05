@@ -29,8 +29,6 @@ User must provide:
 Any existing data under this key will be overwritten.
 
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

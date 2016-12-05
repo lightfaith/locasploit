@@ -26,9 +26,7 @@ class Module(GenericModule):
         
         self.description = """This module looks into /var/lib/dpkg/status file to determine version of all installed packages.
 """
-        self.db_access = [
-        #''
-        ]
+        
         self.dependencies = {
 
         }

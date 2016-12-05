@@ -26,8 +26,6 @@ Results will be stored in the Temporary base under the key <KEY1>_XOR, respectiv
 Key 2 will be repeated to key 1 length or trimmed.
 Any existing value will be overwritten.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

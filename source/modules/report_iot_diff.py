@@ -24,8 +24,6 @@ class Module(GenericModule):
             'diff',
         ]
         self.description = """This module uses reportlab library to generate report of gathered data. Report will be generated on local system."""
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

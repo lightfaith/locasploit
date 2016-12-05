@@ -25,8 +25,7 @@ class Module(GenericModule):
         
         
         self.description = 'This module uses openssl library to generate private key and matching Certificate Signing Request. Configuration file can be optionally used.'
-        self.db_access = [
-        ]
+        
         self.dependencies = {
 
         }

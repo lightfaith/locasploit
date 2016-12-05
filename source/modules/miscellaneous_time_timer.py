@@ -23,8 +23,6 @@ class Module(GenericModule):
         self.description = """
 This module just runs for a specified time.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

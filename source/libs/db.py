@@ -467,6 +467,8 @@ class DBAnalysis(DB):
     # CRON
     def add_cron(self, systemroot, entries):
         systemid = self.get_systemid(systemroot)
+        if systemid == DB_ERROR:
+            return DB_ERROR
         self.execute("BEGIN", commit=False)
         result = True
         for entry in entries:
@@ -479,8 +481,37 @@ class DBAnalysis(DB):
     
     def get_cron(self, systemroot):
         systemid = self.get_systemid(systemroot)
+        if systemid == DB_ERROR:
+            return DB_ERROR
         return self.execute("SELECT timing, user, command FROM Cron WHERE fk_systemid=:s", {'s': systemid})
+    
 
+    # DATA
+    def get_data(self, key, subkey, like=False):
+        if like:
+            result = self.execute("SELECT * FROM Data WHERE key LIKE :k AND subkey=:s", {'k': '%'+key+'%', 's': subkey})
+        else:
+            result = self.execute("SELECT * FROM Data WHERE key=:k AND subkey=:s", {'k': key, 's': subkey})
+        if result == DB_ERROR or len(result) == 0:
+            return None
+        return result
+    
+    def add_data(self, key, subkey, value):
+        if self.execute("INSERT OR REPLACE INTO Data(key, subkey, value) VALUES(:k, :s, :v)", {'k': key, 's': subkey, 'v': value}) == DB_ERROR:
+            return DB_ERROR
+        return True
+    
+    def get_data_system(self, key, systemroot, like=False):
+        systemid = self.get_systemid(systemroot)
+        if systemid == DB_ERROR:
+            return DB_ERROR
+        return self.get_data(key, systemid, like)
+    
+    def add_data_system(self, key, systemroot, value):
+        systemid = self.get_systemid(systemroot)
+        if systemid == DB_ERROR:
+            return DB_ERROR
+        return self.add_data(key, systemid, value)
 
 # inicialization
 lib.db = {}

@@ -26,8 +26,6 @@ This module moves TB value from KEY1 to KEY2.
 Existing value will be overwritten.
 
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

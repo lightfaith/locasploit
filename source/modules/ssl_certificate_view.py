@@ -28,8 +28,7 @@ class Module(GenericModule):
         
         
         self.description = 'This module uses openssl library to read certificate information.'
-        self.db_access = [
-        ]
+        
         self.dependencies = {
 
         }

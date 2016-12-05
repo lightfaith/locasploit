@@ -25,8 +25,6 @@ This module performs hex encoding/decoding (using form '1415dead08beef69').
 Resulting value will be inserted into Temporary base under the key '<KEY>_HEXe' or '<KEY>_HEXd', respectively.
 Any existing value will be overwritten.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

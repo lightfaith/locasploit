@@ -11,7 +11,7 @@ tb = lib.tb
 # DO NOT USE THIS MODULE, JUST INHERIT
 class GenericModule():
     def __init__(self):
-        self.db_access = []
+        pass
 
     def run(self):
         log.err('You should not run this module!')

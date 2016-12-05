@@ -19,13 +19,12 @@ class Module(GenericModule):
             'cron', 
             'crontab',
             'enumeration',
+            'schedule'
         ]
         
         
         self.description = 'This module dumps /etc/crontab, /etc/anacrontab, /etc/cron.d/* and /var/spool/cron/crontabs/* to determined what is scheduled.'
-        self.db_access = [
-        'USER', #'GROUP', 'UG',
-        ]
+        
         self.dependencies = {
 
         }

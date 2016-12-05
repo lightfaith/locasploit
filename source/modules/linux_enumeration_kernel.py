@@ -27,23 +27,13 @@ class Module(GenericModule):
         self.description = """
 This module extracts various info about the kernel.
 Specifically, the following commands are issued:
-    cat /proc/version
-    uname -a
-    uname -mrs
     rpm -q kernel
     dmesg | grep Linux
     ls /boot | grep vmlinuz-
+    uname -r
+    cat /proc/version
 """
-        self.db_access = [
-            'KERNEL',
-            'KERNEL PROC_VERSION',
-            'KERNEL UNAME-A',
-            'KERNEL UNAME-MRS',
-            'KERNEL RPM',
-            'KERNEL DMESG_LINUX',
-            'KERNEL VMLINUZ',
-
-        ]
+        
         self.dependencies = {
 
         }
@@ -63,16 +53,28 @@ Specifically, the following commands are issued:
     
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
+        activeroot = self.parameters['ACTIVEROOT'].value
+
         # # # # # # # #
-        # get /proc/version
-        proc_version = io.read_file(self.parameters['ACTIVEROOT'].value, '/proc/version')
-        if proc_version != IO_ERROR:
-            log.ok('/proc/version:')
-            for x in result.splitlines():
-                log.writeline(x)
-        else:
-            log.err('/proc/version cannot be accessed.')
+        known = db['analysis'].get_data_system('KERNEL', activeroot)
+        if known is not None:
+            log.info('Already known: %s' % known[0][3])
         
+        # from least confident to the most
+        # TODO rpm -q kernel
+        
+        # TODO dmesg | grep Linux
+
+        # /boot/vmlinuz-*
+        boots = sorted([x[8:] for x in io.list_dir(activeroot, '/boot') if x.startswith('vmlinuz-')], reverse=True)
+        # let's use the highest one (#TODO is that enough?)
+        if len(boots)>0:
+            if not silent:
+                log.ok('/boot/vmlinuz: %s' % (boots[0]))
+            db['analysis'].add_data_system('VMLINUZ', activeroot, boots[0])
+            known = boots[0]
+
+        # TODO uname -r 
         """
         # run uname -a and uname -mrs
         if command_exists('uname'):
@@ -114,18 +116,25 @@ Specifically, the following commands are issued:
         else:
             log.err('Dmesg cannot be executed.')
         
-        # what vmlinuz?
-        if os.access('/boot', os.R_OK) and os.access('/boot', os.X_OK):
-            vmlinuzes = [x for x in os.listdir('/boot') if x[:8] == 'vmlinuz-']
-            lib.kb.add('KERNEL VMLINUZ', '\n'.join(vmlinuzes))
-            if not silent:
-                log.ok('vmlinuz in /boot/:')
-                for x in vmlinuzes:
-                    log.writeline(x)
         else:
             log.err('/boot cannot be accessed.')
         # # # # # # # #
         """
+        # get /proc/version
+        if io.can_read(activeroot, '/proc/version'):
+            proc_version = io.read_file(activeroot, '/proc/version')
+            if proc_version != IO_ERROR:
+                proc_version = re.search(r'Linux version ([^ ]+)', proc_version).group(1)
+                if not silent:
+                    log.ok('/proc/version: %s' % (proc_version))
+                db['analysis'].add_data_system('PROC_VERSION', activeroot, proc_version)
+                known = proc_version
+        
+
+        # save best result as KERNEL
+        if known is not None:
+            db['analysis'].add_data_system('KERNEL', activeroot, known.partition('-')[0])
+        
         return None
 
 

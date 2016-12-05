@@ -34,8 +34,7 @@ class Module(GenericModule):
            http://machine/path - NOT IMPLEMENTED
            https://machine/path - NOT IMPLEMENTED
         """ % (global_parameters['ACTIVEROOT'])
-        self.db_access = [
-        ]
+        
         
         self.dependencies = {
         }

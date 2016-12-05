@@ -148,13 +148,6 @@ def execute_command(command):
                     print_modules(by_author)
                     log.writeline('')
                 
-                # search by knowledge base
-                by_db = [x for x in modules if command[7:].upper() in [y.upper() for y in modules[x].db_access]]
-                if len(by_db) > 0:
-                    log.attachline('By Knowledge Base:', log.Color.PURPLE)
-                    print_modules(by_db)
-                    log.writeline('')
-                
                 # search by dependency
                 by_dependency = [x for x in modules if len(search_abbr(command[7:].lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
                 if len(by_dependency) > 0:
@@ -650,13 +643,6 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
                 log.attach(', %s' % m.tags[i])
         log.writeline('\n')
         
-    # database accessed
-    if db and len(m.db_access) > 0:
-        log.attachline('Data Base:', log.Color.PURPLE)
-        for d in m.db_access:
-            log.writeline(d)
-        log.writeline()
-
     # modules the active module depends on
     if dependencies and len(m.dependencies) > 0:
         log.attachline('Dependencies:', log.Color.PURPLE)

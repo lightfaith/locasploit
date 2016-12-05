@@ -26,8 +26,6 @@ class Module(GenericModule):
 Words from a wordlist file are imported into locasploit database.
 """
         
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

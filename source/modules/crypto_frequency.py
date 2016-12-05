@@ -26,8 +26,6 @@ class Module(GenericModule):
         self.description = """
 This module inserts a dictionary of letter frequencies for specified language into Temporary Base.
 Known languages: [%s]""" % (', '.join(self.frequencies.keys()))
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

@@ -41,8 +41,7 @@ If subtitle speed is incorrect, the delay will deteriorate through time. For the
 Supported formats:
     .srt
 """
-        self.db_access = [
-        ]
+        
         
         self.dependencies = {
         }

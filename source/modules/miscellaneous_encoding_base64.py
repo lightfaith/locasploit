@@ -25,8 +25,6 @@ This module performs base64 encoding/decoding.
 Resulting value will be inserted into Temporary base under the key '<KEY>_BASE64e' or '<KEY>_BASE64d', respectively.
 Any existing value will be overwritten.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

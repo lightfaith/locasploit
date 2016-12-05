@@ -42,11 +42,6 @@ This module is designed to be used as a template for new modules.
 Tired of the comments? Check the "basic" module.
 """
         
-        # Tables from analysis.db, which are modified, should be listed here. Modules can be searched based on these fields. Do not use search keywords and symbols, number keys and spaces.
-        self.db_access = [
-            #'USERS',
-        ]
-        
         # If other modules are run directly from this module, you must specify the name and version. Dependencies will be checked for existence prior to execution.
         self.dependencies = {
             #'linux.enumeration.distribution': '1.0',

@@ -26,8 +26,6 @@ class Module(GenericModule):
 This module checks https://nvd.nist.gov/download.cfm for modified CVE entries and alters local database accordingly.
 This should be run frequently, as the list of modified entries is being held for up to 8 days.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

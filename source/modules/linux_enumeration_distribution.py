@@ -25,13 +25,7 @@ class Module(GenericModule):
         ]
         
         self.description = 'This module extracts various info about current distribution from specific files (namely /etc/issue and /etc/*-release).'
-        self.db_access = [
-            'DISTRIBUTION',
-            'ISSUE',
-            'LSB-RELEASE',
-            'OS-RELEASE',
-            'REDHAT-RELEASE',
-        ]
+        
         self.dependencies = {
 
         }
@@ -41,44 +35,45 @@ class Module(GenericModule):
     def reset_parameters(self):
         self.parameters = {
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
+            'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
         }
 
     def check(self, silent=None):
-        result = CHECK_SUCCESS
-        if silent is None:
-            silent = positive(self.parameters['SILENT'].value)
-        if not os.access('/etc', os.R_OK) or not os.access('/etc', os.X_OK):
-            if not silent:
-                log.err('/etc cannot be accessed.')
-            result = CHECK_FAILURE
+        result = CHECK_NOT_SUPPORTED
         return result
     
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
+        activeroot = self.parameters['ACTIVEROOT'].value
         # # # # # # # #
-        # get /etc/issue
-        if os.access('/etc/issue', os.R_OK):
-            with open('/etc/issue', 'r') as f:
-                result = f.read()
-                lib.kb.add('DISTRIBUTION ISSUE', result)
-                if not silent:
-                    log.ok('/etc/issue:')
-                    for x in result.splitlines():
-                        log.writeline(x)
-        else:
-            log.err('/etc/issue cannot be accessed.')
         
+        # get /etc/issue
+        issue = io.read_file(activeroot, '/etc/issue')
+        if issue != IO_ERROR:
+            issue = '\n'.join([x for x in issue.splitlines() if len(x.strip())>0])
+            if not silent:
+                log.ok('/etc/issue:')
+                for line in issue.splitlines():
+                    if len(line.strip())>0:
+                        log.ok('  ' + line)
+            db['analysis'].add_data_system('ISSUE', activeroot, issue)
+
         # get /etc/*-release
-        release_files = [x for x in os.listdir('/etc/') if re.match('.*-release$', x)]
-        for x in release_files:
-            with open('/etc/' + x, 'r') as f:
-                result = f.read()
-                lib.kb.add('DISTRIBUTION %s' % (x.upper()), result)
-                if not silent:
-                    log.ok('%s:' % x)
-                    for l in result.splitlines():
-                        log.writeline(l)
-            
+        releases = [x for x in io.list_dir(activeroot, '/etc') if x.endswith('-release')]
+        for x in releases:
+            path = os.path.join('/etc/', x)
+            release = io.read_file(activeroot, path)
+            if release == IO_ERROR:
+                continue
+            release = '\n'.join([x for x in release.splitlines() if len(x.strip())>0])
+            if not silent:
+                log.ok('%s:' % (x))
+                for line in release.splitlines():
+                    log.ok('  ' + line)
+            db['analysis'].add_data_system(x.upper(), activeroot, release)
+          
+        # TODO uname -m?
+
         # # # # # # # #
         return None
     

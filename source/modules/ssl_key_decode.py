@@ -25,8 +25,7 @@ class Module(GenericModule):
         
         
         self.description = 'This module uses openssl library to decode encrypted key file. Password must be known.'
-        self.db_access = [
-        ]
+        
         self.dependencies = {
 
         }

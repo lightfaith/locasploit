@@ -22,8 +22,7 @@ class Module(GenericModule):
         
         
         self.description = 'This module uses openssl library to create Certification Authority.'
-        self.db_access = [
-        ]
+        
         self.dependencies = {
 
         }

@@ -21,8 +21,6 @@ class Module(GenericModule):
         ]
         self.description = """
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

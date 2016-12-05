@@ -23,9 +23,7 @@ class Module(GenericModule):
         
         
         self.description = ''
-        self.db_access = [
-        'USER',
-        ]
+        
         self.dependencies = {
 
         }

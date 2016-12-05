@@ -25,9 +25,6 @@ You can upload words into the database using:
     1. db['dict'].add_tmp_words(self, tag, words) method
     2. crypto.words.upload module
 """
-        self.db_access = [
-            'Temporary',
-        ]
         
         self.dependencies = {
         }

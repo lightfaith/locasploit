@@ -23,9 +23,7 @@ class Module(GenericModule):
         
         
         self.description = 'This module dumps /etc/passwd info and writes results into database.'
-        self.db_access = [
-        'USER', #'GROUP', 'UG',
-        ]
+        
         self.dependencies = {
 
         }

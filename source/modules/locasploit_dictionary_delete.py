@@ -25,8 +25,6 @@ class Module(GenericModule):
         self.description = """Specified dictionary is deleted.
 """
         
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

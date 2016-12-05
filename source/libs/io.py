@@ -6,7 +6,7 @@ from source.libs.db import *
 import stat, hashlib
 
 def get_fullpath(system, path):
-    #print(system)
+    #print(system, path)
     if system.startswith('/'): # local or sub
         if path.startswith('./') or  path.startswith('../') or path.startswith('.\\') or path.startswith('..\\'): # enable relative path also
             return path

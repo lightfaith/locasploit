@@ -25,9 +25,6 @@ class Module(GenericModule):
         self.description = """
 Performs a binwalk on a file.
 """
-        self.db_access = [
-        ]
-        
         self.dependencies = {
         }
         self.changelog = """

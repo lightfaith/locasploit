@@ -24,10 +24,6 @@ This module moves list of words or string (word by word) from Temporary base int
 If the whole TB is to be moved into database, keys are used as tags.
 """
         
-        self.db_access = [
-            'Temporary',
-        ]
-        
         self.dependencies = {
         }
         self.changelog = """

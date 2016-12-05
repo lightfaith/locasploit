@@ -22,8 +22,6 @@ class Module(GenericModule):
 This module reads a file, replaces special characters and writes the result into a new file.
 """
         
-        self.db_access = [
-        ]
         
         self.dependencies = {
         }

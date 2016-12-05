@@ -165,9 +165,6 @@ def search_keyword(keyword, moduleonly=False):
             # in authors
             by_author = [x for x in modules for authors in modules[x].authors if keyword.lower() in authors.name.lower() or keyword.lower() in authors.email.lower() or keyword.lower() in authors.web.lower()]
         
-            # in kb
-            by_db = [x for x in modules if keyword.upper() in [y.upper() for y in modules[x].db_access]]
-
             # in dependencies (or abbreviations)
             by_dependency = [x for x in modules if len(search_abbr(keyword.lower(), [y.lower() for y in list(modules[x].dependencies)])) > 0]
 

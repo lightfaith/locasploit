@@ -25,9 +25,6 @@ class Module(GenericModule):
         self.description = """
 Extracts components of a .bin file.
 """
-        self.db_access = [
-        ]
-        
         self.dependencies = {
         }
         self.changelog = """

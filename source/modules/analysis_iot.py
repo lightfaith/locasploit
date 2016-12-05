@@ -30,7 +30,7 @@ Requirements:
 Functionality can be divided in 5 steps:
 
     1. Extraction
-        'iot.binwalk.extract' module is used for this purpose. User supplies image's path and a folder for extraction. Folder path must be absolute, as it will be used as root.
+        'iot.binwalk.extract' module is used for this purpose. User supplies image's path and a folder for extraction. Folder path must be absolute, as it will be used as root. Extraction can be skipped by setting the EXTRACT parameter to NO - this is useful if same image is analyzed repeatedly.
 
     2. Root location
         Program guesses the root of the directory tree by searching for etc/passwd file.
@@ -52,8 +52,6 @@ Functionality can be divided in 5 steps:
 
     At this point, all data are ready to be processed by report.iot and report.iot.diff modules.
 """
-        self.db_access = [
-        ]
         
         self.dependencies = {
             'iot.binwalk.extract': '1.0',
@@ -79,6 +77,7 @@ Functionality can be divided in 5 steps:
             'TMPDIR': Parameter(mandatory=True, description='Absolute path of extraction directory'),
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
             'TAG': Parameter(mandatory=True, description='Package info tag'),
+            'EXTRACT': Parameter(value='yes', mandatory=True, description='Extraction will happen'),
             #'OUTPUTFILE': Parameter(mandatory=True, description='Report path'),
 
         }
@@ -115,6 +114,7 @@ Functionality can be divided in 5 steps:
         tmpdir = self.parameters['TMPDIR'].value
         accuracy = self.parameters['ACCURACY'].value
         tag = self.parameters['TAG'].value
+        extract = positive(self.parameters['EXTRACT'].value)
         #outputfile = self.parameters['OUTPUTFILE'].value
         # # # # # # # #
         import time, hashlib
@@ -129,12 +129,13 @@ Functionality can be divided in 5 steps:
         tb[tag+'_general'].append(('SHA256', io.sha256(activeroot, binfile)))
 
         
-        log.info('Extracting firmware...')
-        ibe = lib.modules['iot.binwalk.extract']
-        ibe.parameters['ACTIVEROOT'].value = activeroot
-        ibe.parameters['BINFILE'].value = binfile
-        ibe.parameters['TMPDIR'].value = tmpdir
-        #ibe.run()
+        if extract:
+            log.info('Extracting firmware...')
+            ibe = lib.modules['iot.binwalk.extract']
+            ibe.parameters['ACTIVEROOT'].value = activeroot
+            ibe.parameters['BINFILE'].value = binfile
+            ibe.parameters['TMPDIR'].value = tmpdir
+            ibe.run()
         
         # 2. Root location
         log.info('Looking for directory trees..')
@@ -154,6 +155,23 @@ Functionality can be divided in 5 steps:
             # System info enumeration
             log.info('Dumping system info...')
             tb[tag+'_system'] = []
+
+            led = lib.modules['linux.enumeration.distribution']
+            led.parameters['ACTIVEROOT'].value = f
+            led.run()
+            issue = db['analysis'].get_data_system('ISSUE', f)
+            if issue != DB_ERROR:
+                oses.append(('Issue', issue[0][3]))
+            releases = db['analysis'].get_data_system('RELEASE', f, like=True)
+            for x in releases:
+                oses.append((x[1], x[3]))
+            
+            lek = lib.modules['linux.enumeration.kernel']
+            lek.parameters['ACTIVEROOT'].value = f
+            lek.run()
+            kernel = db['analysis'].get_data_system('KERNEL', f)
+            if kernel is not None:
+                kernels.append(kernel[0][3])
 
             leu = lib.modules['linux.enumeration.users']
             leu.parameters['ACTIVEROOT'].value = f
@@ -177,7 +195,12 @@ Functionality can be divided in 5 steps:
                 m.parameters['SILENT'].value = 'yes'
                 m.run()
         
-            tb[tag+'_system'].append(('OS', oses))
+            
+            if len(kernels) == 0:
+                kernels.append('UNKNOWN')
+            # push gathered data into TB
+            
+            tb[tag+'_os'] = oses
             tb[tag+'_system'].append(('Kernel', kernels))
             tb[tag+'_system'].append(('Users', users))
             tb[tag+'_system'].append(('Privileged users', pusers))

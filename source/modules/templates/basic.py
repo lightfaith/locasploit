@@ -23,9 +23,6 @@ This module is designed to be used as a template for new modules.
 Need help with this madness? Check the "basic_commented" module.
 """
         
-        self.db_access = [
-            #'USERS',
-        ]
         
         self.dependencies = {
             #'linux.enumeration.distribution': '1.0',

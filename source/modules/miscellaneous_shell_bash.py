@@ -24,8 +24,7 @@ class Module(GenericModule):
         self.description = """
 This module allows bash command execution.
 """
-        self.db_access = [
-        ]
+        
         self.dependencies = {
         }
         self.changelog = """
