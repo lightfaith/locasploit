@@ -29,7 +29,10 @@ def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0):
     if fullpath == IO_ERROR:
         return IO_ERROR
     if not can_read(system, path):
-        log.err('Cannot read \'%s\'' % (fullpath))
+        if is_link(system, path):
+            log.err('\'%s\' (on \'%s\') is a symlink to \'%s\' but it cannot be read.' % (path, system, get_link(system, path)))
+        else:
+            log.err('Cannot read \'%s\'.' % (fullpath))
         return IO_ERROR
         
     open_and_close = (f is None)
@@ -37,7 +40,7 @@ def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0):
     if system.startswith('/'): # local or sub
         try:
             if forcebinary:
-                raise TypeError
+                raise TypeError # will be opened as binary
             if open_and_close:
                 f = open(fullpath, 'r', encoding='utf-8')
             result = f.read() if chunk == 0 else f.read(chunk)
@@ -68,7 +71,10 @@ def write_file(system, path, content, lf=True, utf8=False):
     if fullpath == IO_ERROR:
         return IO_ERROR
     if not can_write(system, path) and not can_create(system, path):
-        log.err('Cannot write \'%s\'' % (fullpath))
+        if is_link(system, path):
+            log.err('\'%s\' (on %s) is a symlink to \'%s\' but it cannot be written.' % (path, system, get_link(system, path)))
+        else:
+            log.err('Cannot write \'%s\'.' % (fullpath))
         return IO_ERROR
     
     if system.startswith('/'): # local or sub
@@ -126,6 +132,13 @@ def delete(system, path):
             except:
                 # recursively?
                 shutil.rmtree(fullpath)
+
+#def get_basename(system, path):
+#    fullpath = get_fullpath(system, path)
+#    if system.startswith('/'): # local or sub
+#        return os.path.basename(path)
+#    return IO_ERROR # bad
+# NOT NECESSARY, os.path.basename(path) should be sufficient
 
 def get_file_info(system, path):
     fullpath = get_fullpath(system, path)
@@ -198,6 +211,23 @@ def can_create(system, path):
     else:
         return False
 
+def is_link(system, path):
+    #os = get_system_type_from_active_root(system)
+    if system.startswith('/'):
+        return os.path.islink(get_fullpath(system, path))
+    #TODO
+    return False
+
+def get_link(system, path):
+    # system is not in the output!
+    if is_link(system, path):
+        if system.startswith('/'): # local or sub
+            return os.readlink(get_fullpath(system, path))
+        else:
+            return path # TODO not implemented
+    else:
+        return path
+
 def list_dir(system, path):
     if system.startswith('/'): # local or sub
         try:
@@ -208,12 +238,12 @@ def list_dir(system, path):
         # TODO
         return []
 
-def find(system, start, filename, dironly=False):
+def find(system, start, filename, location=False):
     result = []
     if system.startswith('/'): # local or sub
         for root, dirs, files in os.walk(get_fullpath(system, start)):
-            if filename in files:
-                if dironly:
+            if filename in files or filename in dirs:
+                if location:
                     result.append(get_fullpath(system, root))
                 else:
                     result.append(get_fullpath(system, os.path.join(root, filename)))
@@ -251,11 +281,19 @@ def sha256(system, path, hexdigest=True):
 
 
 def get_file_type_char(mask):
-    chars = '??????????????df'
-    for i in range(0, len(chars)):
-        x = 2**i
-        if x == mask:
-            return chars[i]
+    #chars = '??????????????df'
+    #for i in range(0, len(chars)):
+    #    x = 2**i
+    #    if x == mask:
+    #        return chars[i]
+    known = {
+        0x6000: 'b',
+        0x4000: 'd',
+        0x8000: 'f',
+        0x2000: 'c',
+    }
+    if mask in known:
+        return known[mask]
     return '?'
 
 def get_system_type_from_active_root(activeroot):
@@ -270,14 +308,17 @@ def get_system_type_from_active_root(activeroot):
     #
     
     # chroot or similar?
-    if activeroot.startswith('/'):
+    if activeroot.startswith('/'): # local or sub
         # linux should have some folders in / ...
         success = 0
         linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', 'lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
         for folder in linux_folders:
             if can_read(activeroot, folder):
                 success += 1
-        if success/len(linux_folders) > 0.5: # this should be linux
+        linux_score = success/len(linux_folders)
+        
+        log.info('Linux score for \'%s\': %f' % (activeroot, linux_score))
+        if linux_score > 0.5: # this should be linux
             #TODO write into DB
             return 'linux'
         

@@ -1,0 +1,3 @@
+use locasploit.update.cve
+run
+

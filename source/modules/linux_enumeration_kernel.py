@@ -57,8 +57,11 @@ Specifically, the following commands are issued:
 
         # # # # # # # #
         known = db['analysis'].get_data_system('KERNEL', activeroot)
-        if known is not None:
-            log.info('Already known: %s' % known[0][3])
+        if len(known) > 0:
+            known = known[0][3]
+            log.info('Already known: %s' % known)
+        else:
+            known = None
         
         # from least confident to the most
         # TODO rpm -q kernel

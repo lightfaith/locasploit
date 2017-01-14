@@ -8,6 +8,10 @@ DONE:		module use by best match
 			setg PARAM $VARIABLE (from TB) - for every command
 			tb del a b 0
 			dict exports different SHA1
+			cve prev version
+			cve empty version
+			accuracy fix
+			accuracy test
 PARTIALLY:	kb->db
 TODO:		ACTIVEROOT for linux.* modules
 			check/fix silent in modules
@@ -16,16 +20,13 @@ SELECT DISTINCT P.name, V.value, CVE.name FROM Product P INNER JOIN Version V ON
 			http://www.nsrl.nist.gov/Downloads.htm
 			https://nvd.nist.gov/download.cfm
 			http://cve.mitre.org/data/refs/refmap/source-EXPLOIT-DB.html
-			cve prev version
-			cve empty version
 			comment analysis.iot (steps, issues)
-			accuracy fix
-			accuracy test
+			SSH support
+			QEMU support (at least manual)
 			changelog firmwares test
-			remove dbaccess - useless, right? everything can be solved by tags
+			binwalk mounts? (romfs)
 			
 
 totest: NAS (Synology), buffalo - nas-central.org
 		tplink
-14d
 

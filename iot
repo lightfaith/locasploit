@@ -1,0 +1,37 @@
+use analysis.iot
+##set BINFILE ./data/dd-wrt.v24-21061_NEWD-2_K2.6_mini_wrt160nv3.bin
+##set BINFILE ./data/MJPEG indoor PT camera-11.22.2.51.zip
+##set BINFILE ./data/MJPEG indoor PT camera-11.37.2.63-20150603.zip
+#set BINFILE /thesis/data/firmwares/mjpeg_outdoor/System firmware/lr_cmos_11_25_2_51.bin
+#set BINFILE ./data/firmwares/FI9821P-1.11.1/FI9821P_app_ver1.11.0.40_OneToAll.bin
+#set BINFILE ./data/firmwares/FI9821P-1.11.1/FosIPC_A_app_ver2.11.1.6.bin
+#set BINFILE ./data/firmwares/2.x.1.119-20150316 for all HD cameras/Step1_FosIPC_A_sys_ver1.4.1.10.bin
+#set BINFILE ./data/firmwares/seagate_nas_1400319.img
+set BINFILE /media/root/Entertainment/locasploit_files/firmwares/seagate_nas_1400319.img
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+#set BINFILE ./data/firmwares/data/firmwares/
+set TMPDIR /media/root/Entertainment/locasploit_files/extracted
+#set EXTRACT yes
+set EXTRACT no
+set TAG test
+set ACCURACY full
+run
+# "another" firmware
+#set BINFILE ./data/firmwares/seagate_nas-update-1500322-2bay.img
+#set TAG test2
+#run
+#back
+use report.iot
+set TAG test
+#use report.iot.diff
+#set TAG1 test
+#set TAG2 test2
+set OUTPUTFILE /tmp/report.pdf
+run
+back
+

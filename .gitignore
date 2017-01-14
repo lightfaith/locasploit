@@ -76,7 +76,20 @@ source/modules/private_*.py
 # obsolete modules
 source/modules/obsolete_*.py
 
-# big unchanged dictionaries
+# big unchanged dictionaries and databases
 dictionaries/
 dict.db
+vuln.db
+
+# CVEs in XML
+vulnerabilities/
+
+# files not ready to be committed
+todo_nogit/
+
+
+
+# ---------------------
+# and the thesis itself
+writeup/
 

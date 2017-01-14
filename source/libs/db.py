@@ -205,7 +205,7 @@ class DBVuln(DB):
         # (cveid, product, vendor, version)
         
         self.execute("BEGIN", commit=False)
-        for cve, product, vendor, version in actuples:
+        for cve, product, vendor, version, prev in actuples:
             cveids = self.execute("SELECT cveid FROM CVE WHERE name=:c", {'c': cve}, commit=False)
             if len(cveids) == 0:
                 continue
@@ -215,7 +215,7 @@ class DBVuln(DB):
             self.execute("INSERT OR IGNORE INTO Product(vendorid, name) VALUES(:vid, :p)", {'vid': vendorid, 'p': product}, commit=False, ignoreerrors=True)
             productid = int(self.execute("SELECT productid FROM product WHERE vendorid=:vid AND name=:p", {'vid': vendorid, 'p': product}, commit=False)[0][0])
             #print('pushing versions')
-            self.execute("INSERT OR IGNORE INTO Version(productid, value) VALUES(:pid, :v)", {'pid': productid, 'v': version}, commit=False, ignoreerrors=True)
+            self.execute("INSERT OR IGNORE INTO Version(productid, value, prev) VALUES(:pid, :v, :p)", {'pid': productid, 'v': version, 'p': prev}, commit=False, ignoreerrors=True)
             versionid = int(self.execute("SELECT versionid FROM Version WHERE productid=:pid AND value=:v", {'pid': productid, 'v': version}, commit=False)[0][0])
             #print('pushing relations')
             self.execute('INSERT OR IGNORE INTO CV(cveid, versionid) VALUES(:cid, :vid)', {'cid': cveids[0][0], 'vid': versionid}, commit=False, ignoreerrors=True)
@@ -227,9 +227,12 @@ class DBVuln(DB):
     def delete_cves_apps(self):
         self.execute("BEGIN", commit=False)
         self.execute("DELETE FROM CV", commit=False)
+        self.execute("DELETE FROM Version", commit=False)
         self.execute("DELETE FROM Product", commit=False)
         self.execute("DELETE FROM Vendor", commit=False)
         self.execute("DELETE FROM CVE", commit=False)
+        for year in range(2002, datetime.now().year+1):
+            self.execute("DELETE FROM Property WHERE key='%d_sha1'" % (year), commit=False)
         self.commit()
 
 
@@ -239,7 +242,11 @@ class DBVuln(DB):
             return DB_ERROR
         return True
 
-
+    def get_property(self, key):
+        result = self.execute("SELECT value FROM Property WHERE key=:k", {'k': key})
+        if result == DB_ERROR or len(result)<1:
+            return DB_ERROR
+        return result[0][0]
 
     def add_tmp(self, data):
         self.execute("BEGIN", commit=False)
@@ -259,10 +266,12 @@ class DBVuln(DB):
 
 
     def get_cves_for_apps(self, tag, checkversion=True):
-        result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name AND version = v.value %s) ORDER BY sort DESC, CVE.name DESC" % ('AND tag = :t' if checkversion else ''), {'t': tag})
+        #result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name AND v.value LIKE version||'%%' AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ('AND tag = :t' if checkversion else ''), {'t': tag})
+        result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name %s AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ("AND (v.value LIKE version||'%%' OR v.value='' OR v.value='-' OR (v.prev=1 AND v.value>version))" if checkversion else ''), {'t': tag})
         if result == DB_ERROR:
-            return DB_ERROR
-        return result
+            return []
+        # return only unique cves, sort by severity and CVE
+        return sorted(dict((x[4], x) for x in result).values(), key=lambda x: (x[13], x[4]), reverse=True)
 
     def clean(self):
         result = self.execute("DELETE FROM Temporary")
@@ -482,7 +491,7 @@ class DBAnalysis(DB):
     def get_cron(self, systemroot):
         systemid = self.get_systemid(systemroot)
         if systemid == DB_ERROR:
-            return DB_ERROR
+            return []
         return self.execute("SELECT timing, user, command FROM Cron WHERE fk_systemid=:s", {'s': systemid})
     
 
@@ -493,7 +502,7 @@ class DBAnalysis(DB):
         else:
             result = self.execute("SELECT * FROM Data WHERE key=:k AND subkey=:s", {'k': key, 's': subkey})
         if result == DB_ERROR or len(result) == 0:
-            return None
+            return []
         return result
     
     def add_data(self, key, subkey, value):
@@ -504,7 +513,7 @@ class DBAnalysis(DB):
     def get_data_system(self, key, systemroot, like=False):
         systemid = self.get_systemid(systemroot)
         if systemid == DB_ERROR:
-            return DB_ERROR
+            return []
         return self.get_data(key, systemid, like)
     
     def add_data_system(self, key, systemroot, value):

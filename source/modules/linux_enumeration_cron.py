@@ -93,8 +93,9 @@ class Module(GenericModule):
             else:
                 todb.append([' '.join(words[:5]), words[5], ' '.join(words[6:])])
 
-        if db['analysis'].add_cron(activeroot, todb) == DB_ERROR:
-            log.err('Cannot add cron entries into DB.')
+        if len(todb)>0:
+            if db['analysis'].add_cron(activeroot, todb) == DB_ERROR:
+                log.err('Cannot add cron entries into DB.')
         
         return None
 

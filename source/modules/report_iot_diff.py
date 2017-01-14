@@ -102,53 +102,60 @@ class Module(GenericModule):
         for tag in [tag1, tag2]:
             # ADD GENERAL INFO
             entries.append(Paragraph('<para spaceBefore=30><i>%s</i> sample<para>' % (tag), samplestyle))
-            data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_general']]
-            data.append(['Vulnerable:', Paragraph('<para textColor=%s><b>%s</b></para>' % ('red', 'YES') if len(tb[tag+'_cves'])>0 else ('green', 'NO') , textstyle)])
-            entries.append(Table(data, None, None, hAlign='LEFT'))
+            data = None
+            if tag+'_general' in tb:
+                data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_general']]
+            if tag+'_cves' in tb:
+                data.append(['Vulnerable:', Paragraph('<para textColor=%s><b>%s</b></para>' % ('red', 'YES') if len(tb[tag+'_cves'])>0 else ('green', 'NO') , textstyle)])
+            if data != None:
+                entries.append(Table(data, None, None, hAlign='LEFT'))
             
             
             
-            # ADD SYSTEM INFO
-            entries.append(Paragraph('<para spaceBefore=20>System info<para>', headingstyle))
-            data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_system']]
-            entries.append(Table(data, None, None, hAlign='LEFT'))
+            if tag+'_system' in tb:
+                # ADD SYSTEM INFO
+                entries.append(Paragraph('<para spaceBefore=20>System info<para>', headingstyle))
+                data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_system']]
+                entries.append(Table(data, None, None, hAlign='LEFT'))
        
     
     
-            # ADD VULNERABLE TABLE
-            entries.append(Paragraph('<para spaceBefore=30>Vulnerable packages<para>', headingstyle))
-            data = [['Package', 'Version', 'Vulnerabilities', '', ''], ['', '', Paragraph('<para textColor=red align=center><b>HIGH</b></para>', textstyle), Paragraph('<para textColor=orange align=center><b>MEDIUM</b></para>', textstyle), Paragraph('<para textColor=yellowgreen align=center><b>LOW</b></para>', textstyle)]]
-            vulnerable = {}
-            totals = [0, 0, 0]
-            for x in tb[tag+'_cves']:
-                #print(x)
-                #print(x[13])
-                key = (x[1], x[14])
-                #print(key)
-                if key not in vulnerable:
-                    vulnerable[key] = [0, 0, 0]
-                vulnerable[key][(0 if x[5] == 'High' else (1 if x[5] == 'Medium' else 2))] += 1
-            notnull = lambda x: x if x > 0 else ''
-            for x in sorted(vulnerable.keys(), key=lambda x: x[0]):
-                data.append((x[0], x[1], notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
-                for i in range(0, 3):
-                    totals[i] += vulnerable[x][i]
-            data.append(['Total:', '', totals[0], totals[1], totals[2]])
-            data.append(['', '', sum(totals), '', ''])
             
-            tvulnerable = Table(data, (6*cm, 4*cm, 2*cm, 2*cm, 2*cm), None, hAlign='LEFT')
-            tvulnerable.setStyle(TableStyle([
-                ('SPAN', (0, 0), (0, 1)), # product
-                ('SPAN', (1, 0), (1, 1)), # version
-                ('SPAN', (-3, 0), (-1, 0)), # vulnerabilities
-                ('SPAN', (0, -2), (1, -1)), # total
-                ('SPAN', (-3, -1), (-1, -1)), # grand total
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
-    
-            entries.append(tvulnerable)
+            if tag+'_cves' in tb:
+                # ADD VULNERABLE TABLE
+                entries.append(Paragraph('<para spaceBefore=30>Vulnerable packages<para>', headingstyle))
+                data = [['Package', 'Version', 'Vulnerabilities', '', ''], ['', '', Paragraph('<para textColor=red align=center><b>HIGH</b></para>', textstyle), Paragraph('<para textColor=orange align=center><b>MEDIUM</b></para>', textstyle), Paragraph('<para textColor=yellowgreen align=center><b>LOW</b></para>', textstyle)]]
+                vulnerable = {}
+                totals = [0, 0, 0]
+                for x in tb[tag+'_cves']:
+                    #print(x)
+                    #print(x[13])
+                    key = (x[1], x[14])
+                    #print(key)
+                    if key not in vulnerable:
+                        vulnerable[key] = [0, 0, 0]
+                    vulnerable[key][(0 if x[5] == 'High' else (1 if x[5] == 'Medium' else 2))] += 1
+                notnull = lambda x: x if x > 0 else ''
+                for x in sorted(vulnerable.keys(), key=lambda x: x[0]):
+                    data.append((x[0], x[1], notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
+                    for i in range(0, 3):
+                        totals[i] += vulnerable[x][i]
+                data.append(['Total:', '', totals[0], totals[1], totals[2]])
+                data.append(['', '', sum(totals), '', ''])
+            
+                tvulnerable = Table(data, (6*cm, 4*cm, 2*cm, 2*cm, 2*cm), None, hAlign='LEFT')
+                tvulnerable.setStyle(TableStyle([
+                    ('SPAN', (0, 0), (0, 1)), # product
+                    ('SPAN', (1, 0), (1, 1)), # version
+                    ('SPAN', (-3, 0), (-1, 0)), # vulnerabilities
+                    ('SPAN', (0, -2), (1, -1)), # total
+                    ('SPAN', (-3, -1), (-1, -1)), # grand total
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
+        
+                entries.append(tvulnerable)
             
         # ADD DESIRED CVEs
         for d in desired:
@@ -156,14 +163,24 @@ class Module(GenericModule):
             title = ''
             
             if d.lower() == 'old':
-                title = 'Fixed vulnerabilities'
-                cvedata = [c for c in tb[tag1+'_cves'] if c[4] not in [x[4] for x in tb[tag2+'_cves']]]
+                if tag1+'_cves' in tb:
+                    title = 'Fixed vulnerabilities'
+                    if tag2+'_cves' in tb:
+                        cvedata = [c for c in tb[tag1+'_cves'] if c[4] not in [x[4] for x in tb[tag2+'_cves']]]
+                    else:
+                        cvedata = [c for c in tb[tag1+'_cves']]
             elif d.lower() == 'common':
-                title = 'Vulnerabilities present in both samples'
-                cvedata = [c for c in tb[tag1+'_cves'] if c[4] in [x[4] for x in tb[tag2+'_cves']]]
+                if tag1+'_cves' in tb and tag2+'_cves' in tb:
+                    title = 'Vulnerabilities present in both samples'
+                    cvedata = [c for c in tb[tag1+'_cves'] if c[4] in [x[4] for x in tb[tag2+'_cves']]]
             elif d.lower() == 'new':
-                title = 'New vulnerabilities'
-                cvedata = [c for c in tb[tag2+'_cves'] if c[4] not in [x[4] for x in tb[tag1+'_cves']]]
+                if tag2+'_cves' in tb:
+                    title = 'New vulnerabilities'
+                    if tag1+'_cves' in tb:
+                        cvedata = [c for c in tb[tag2+'_cves'] if c[4] not in [x[4] for x in tb[tag1+'_cves']]]
+                    else:
+                        cvedata = [c for c in tb[tag2+'_cves']]
+
 
             if cvedata is None:
                 continue

@@ -88,16 +88,30 @@ class Thread(threading.Thread):
             
     # starts the thread
     def run(self):
+        from datetime import datetime
         # TODO check self.terminate somewhere!
         if self.terminate:
             pass
         from urllib.request import urlretrieve
+        last = lib.db['vuln'].get_property('last_update')
+        print(last)
+
+        m = lib.modules['locasploit.update.cve-year']
+        m.parameters['BACKGROUND'].value = 'no'
+        last_update = lib.db['vuln'].get_property('last_update')
+        if last_update != DB_ERROR and (datetime.now() - datetime.strptime(last_update, '%Y-%m-%d')).days < 8:
+            log.info('Entries have been updated less than 8 days ago, checking Modified feed only...')
+            m.parameters['YEARS'].value = 'Modified'
+        else:
+            log.info('Entries have been updated more than 8 days ago, checking all feeds for change...')
+            m.parameters['YEARS'].value = ' '.join(map(str, range(2002, datetime.now().year+1)))
+        m.run()
         # check last date in db (key-value table?)
         # if < 8 days: get modified
-        #              check sum
-        #              update if needed
+        #              update db
+        #              set last_update
         #
-        # else:        download everythingr
+        # else:        download everything
         #              update years where sha1 does not match
         #              get actual checksum of 'modified'
     # terminates the thread

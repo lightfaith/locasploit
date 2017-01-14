@@ -78,8 +78,6 @@ Functionality can be divided in 5 steps:
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
             'TAG': Parameter(mandatory=True, description='Package info tag'),
             'EXTRACT': Parameter(value='yes', mandatory=True, description='Extraction will happen'),
-            #'OUTPUTFILE': Parameter(mandatory=True, description='Report path'),
-
         }
     
 
@@ -137,9 +135,13 @@ Functionality can be divided in 5 steps:
             ibe.parameters['TMPDIR'].value = tmpdir
             ibe.run()
         
+        tmpdir = os.path.join(tmpdir, '_%s.extracted' % (os.path.basename(binfile))) # TODO how about rescans?
+        log.info('Analyzing data in \'%s\'...' % (tmpdir))
+
         # 2. Root location
         log.info('Looking for directory trees..')
-        found = [x[:-len('/etc/passwd')] for x in io.find(activeroot, tmpdir, 'passwd') if x.endswith('/etc/passwd')]
+        #found = [x[:-len('/etc/passwd')] for x in io.find(activeroot, tmpdir, 'passwd') if x.endswith('/etc/passwd')]
+        found = [x[:-len('/etc')] for x in io.find(activeroot, tmpdir, 'etc') if io.get_system_type_from_active_root(x[:-len('/etc')]) == 'linux'] 
         if len(found) > 0 and not silent:
             log.ok('Found %d linux directory trees.' % len(found))
 
@@ -160,7 +162,7 @@ Functionality can be divided in 5 steps:
             led.parameters['ACTIVEROOT'].value = f
             led.run()
             issue = db['analysis'].get_data_system('ISSUE', f)
-            if issue != DB_ERROR:
+            if len(issue)>0:
                 oses.append(('Issue', issue[0][3]))
             releases = db['analysis'].get_data_system('RELEASE', f, like=True)
             for x in releases:
@@ -170,7 +172,7 @@ Functionality can be divided in 5 steps:
             lek.parameters['ACTIVEROOT'].value = f
             lek.run()
             kernel = db['analysis'].get_data_system('KERNEL', f)
-            if kernel is not None:
+            if len(kernel) > 0:
                 kernels.append(kernel[0][3])
 
             leu = lib.modules['linux.enumeration.users']
@@ -194,6 +196,9 @@ Functionality can be divided in 5 steps:
                 log.info('Detected \'%s\' package manager' % (p))
                 m.parameters['SILENT'].value = 'yes'
                 m.run()
+                # 'kernel' package is present when dealing with opkg, so...
+                if p == 'opkg':
+                    kernels += [ps[2] for ps in [x for x in tb[tag+'_packages'] if x[0] == 'kernel']]
         
             
             if len(kernels) == 0:
@@ -204,7 +209,6 @@ Functionality can be divided in 5 steps:
             tb[tag+'_system'].append(('Kernel', kernels))
             tb[tag+'_system'].append(('Users', users))
             tb[tag+'_system'].append(('Privileged users', pusers))
-            #tb[tag+'_system'].append(('Cron entries', crons))
             tb[tag+'_system'].append(('Startup scripts', startups))
             tb[tag+'_system'].append(('Package managers', pms))
             
@@ -216,41 +220,41 @@ Functionality can be divided in 5 steps:
         
         tb[tag+'_cron'] = crons
 
-        packages = [(tag, x[0], x[1], self.get_accurate_version(accuracy, x[2])) for x in tb[tag+'_packages']]
+        packages = []
+        if tag+'_packages' in tb:
+            packages = [(tag, x[0], x[1], self.get_accurate_version(accuracy, x[2])) for x in tb[tag+'_packages']]
 
-        db['vuln'].add_tmp(packages)
-        if not silent:
-            log.ok('Found %d packages.' % (db['vuln'].count_tmp(tag)))
+        if len(packages) > 0:
+            db['vuln'].add_tmp(packages)
+            if not silent:
+                log.ok('Found %d packages.' % (db['vuln'].count_tmp(tag)))
         
-        # 4. CVE detection
-        log.info('Detecting CVEs...')
-        
-        cves = db['vuln'].get_cves_for_apps(tag, accuracy!='none')
-        #print(cves)
-        #print()
-        #print(tb[tag+'_packages'])
-        # create dictionary of vulnerable packages (cause we want original version to be shown, too)
-        vulnerable = {k:v for k in [(x[0], x[1]) for x in cves] for v in [x[2] for x in tb[tag+'_packages'] if x[0] == k[1] and (x[1] == k[0] or x[1] is None)]}
-        #print()
-        #print(vulnerable)
-        cves = [list(x)+[vulnerable[(x[0], x[1])]] for x in cves]
-        #print(cves)
-        tb[tag+'_cves'] = cves
-        if not silent:
-            log.ok('Found %d CVEs.' % (len(cves)))
+            # 4. CVE detection
+            log.info('Detecting CVEs...')
+            
+            cves = db['vuln'].get_cves_for_apps(tag, accuracy!='none')
+            # accuratize the returned version for report
+            cves = [list(x[:2]) + [self.get_accurate_version(accuracy, x[2])] + list(x[3:]) for x in cves]
+            #print(cves)
+            #print()
+            #print(tb[tag+'_packages'])
+            # create dictionary of vulnerable packages (cause we want original version to be shown, too)
+            vulnerable = {k:v for k in [(x[0], x[1]) for x in cves] for v in [x[2] for x in tb[tag+'_packages'] if x[0] == k[1] and (x[1] == k[0] or x[1] is None)]}
+            #print()
+            #print(vulnerable)
+            cves = [list(x)+[vulnerable[(x[0], x[1])]] for x in cves]
+            #print(cves)
+            tb[tag+'_cves'] = cves
+            if not silent:
+                log.ok('Found %d CVEs.' % (len(cves)))
 
-        ## 5. Report generation
-        #log.info('Generating report...')
-        #ri = lib.modules['report.iot']
-        #ri.parameters['OUTPUTFILE'].value = outputfile
-        #ri.parameters['TAG'].value = tag
-        #ri.run()
-        #log.ok('Report generated!')
         # # # # # # # #
         return None
     
     def get_accurate_version(self, accuracy, version):
-        if accuracy != 'full' and accuracy != 'none':
+        #print('[ ] Getting "%s" version of "%s": ' % (accuracy, version), end='')
+        #if accuracy != 'full' and accuracy != 'none':
+        if accuracy in ['major', 'minor', 'build']:
             # some alteration, TODO check
             if ':' in version:
                 version = version.partition(':')[2]
@@ -262,8 +266,9 @@ Functionality can be divided in 5 steps:
             if accuracy in ['minor', 'build'] and minorparts[0] != '': 
                 version = '.'.join([majorparts[0], minorparts[0]])
             buildparts = minorparts[2].partition('.')
-            if accuracy == 'build' and buildparts[2] != '': 
-                version = '.'.join([majorparts[0], minorparts[0], buildparts[0]])
+            if accuracy == 'build' and buildparts[0] != '': 
+                version = '.'.join([majorparts[0], minorparts[0], buildparts[0].partition('-')[0]])
+        #print(version)
         return version
 
 
