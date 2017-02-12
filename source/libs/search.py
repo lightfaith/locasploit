@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from source.libs.include import *
+import source.libs.log as log
 
 class Node:
     pass
@@ -56,10 +57,12 @@ def search(expression):
     depth = 0
     nodes = []
     operators = [] # determined by priority (mod 4 gives index in priority list)
-    expression = list(filter(None, [x.strip() for x in re.split('([!|& \(\)<>=])', expression)]))
+    expression = list(filter(None, [x.strip() for x in re.split('([! \(\)<>=]|&&|\|\|)', expression)]))
+    #print(expression)
     for x in expression:
         # first normalize operators (&&, &, and) ...
         if x.lower() in ['&&', 'and']:
+            print('double and...')
             x = '&'
         if x.lower() in ['||', 'or']:
             x = '|'
