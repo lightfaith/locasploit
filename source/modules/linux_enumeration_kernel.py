@@ -59,7 +59,7 @@ Specifically, the following commands are issued:
         known = db['analysis'].get_data_system('KERNEL', activeroot)
         if len(known) > 0:
             known = known[0][3]
-            log.info('Already known: %s' % known)
+            log.ok('Kernel version already known: %s' % known)
         else:
             known = None
         
