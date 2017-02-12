@@ -67,37 +67,39 @@ This should be run frequently, as the list of modified entries is being held for
         return result
     
     def run(self):
-        silent = positive(self.parameters['SILENT'].value) 
+        silent = positive(self.parameters['SILENT'].value)
+        background = positive(self.parameters['BACKGROUND'].value)
         # # # # # # # #
         #t = Thread(silent, int(self.parameters['TIMEOUT'].value))
-        t = Thread(silent)
-        t.start()
+        t = Thread(silent, background)
         if positive(self.parameters['BACKGROUND'].value):
             return t
+        t.start()
         t.join()
         # # # # # # # #
         return None
     
         
 class Thread(threading.Thread):
-    def __init__(self, silent): #,timeout):
+    def __init__(self, silent, background): #,timeout):
         threading.Thread.__init__(self)
         self.silent = silent
         #self.timeout = timeout
         self.terminate = False
+        self.background = background
             
     # starts the thread
     def run(self):
         from datetime import datetime
         # TODO check self.terminate somewhere!
         if self.terminate:
-            pass
+            return
         from urllib.request import urlretrieve
         last = lib.db['vuln'].get_property('last_update')
-        print(last)
+        log.info('Last update: %s' % ('never' if last == -1 else last))
 
         m = lib.modules['locasploit.update.cve-year']
-        m.parameters['BACKGROUND'].value = 'no'
+        m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no' 
         last_update = lib.db['vuln'].get_property('last_update')
         if last_update != DB_ERROR and (datetime.now() - datetime.strptime(last_update, '%Y-%m-%d')).days < 8:
             log.info('Entries have been updated less than 8 days ago, checking Modified feed only...')
@@ -105,15 +107,17 @@ class Thread(threading.Thread):
         else:
             log.info('Entries have been updated more than 8 days ago, checking all feeds for change...')
             m.parameters['YEARS'].value = ' '.join(map(str, range(2002, datetime.now().year+1)))
-        m.run()
-        # check last date in db (key-value table?)
-        # if < 8 days: get modified
-        #              update db
-        #              set last_update
-        #
-        # else:        download everything
-        #              update years where sha1 does not match
-        #              get actual checksum of 'modified'
+        log.info('Will update following years: '+ m.parameters['YEARS'].value)
+        job = m.run()
+        # get job id so we can wait for it
+        lucyid = None if job is None else [lib.scheduler.add(m.name, time.time(), job)]
+        m = lib.modules['locasploit.update.exploit']
+        job = m.run()
+        lib.scheduler.add(m.name, time.time(), job, timeout=None, waitfor=lucyid)
+        
+
+
+
     # terminates the thread
     def stop(self):
         self.terminate = True
