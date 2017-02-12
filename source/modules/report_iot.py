@@ -15,7 +15,7 @@ class Module(GenericModule):
         
         self.date = '2016-11-14'
         self.license = 'GNU GPLv2'
-        self.version = '1.0'
+        self.version = '1.1'
         self.tags = [
             'IoT',
             'Internet of Things',
@@ -31,7 +31,6 @@ class Module(GenericModule):
 """
 
         self.reset_parameters()
-        self.packathors = ['dpkg', 'opkg']
 
     def reset_parameters(self):
         self.parameters = {
@@ -91,14 +90,16 @@ class Module(GenericModule):
         
 
         cves_lists = [x.get('cves') for x in tb[tag+'_filesystems']] if tag+'_filesystems' in tb else []
+        exploits = {} if tag+'_exploits' not in tb else tb[tag+'_exploits']
+        exploit_count = len(set([x for k,v in exploits.items() for x in v]))
         if tag+'_general' in tb:
             # ADD GENERAL INFO
             #entries.append(Paragraph('<para spaceBefore=30>General info<para>', headingstyle))
-            data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in tb[tag+'_general']]
+            data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple, set] else x[1]] for x in tb[tag+'_general']]
             #if tag+'_cves' tb:
-
             if len(cves_lists) > 0:
                 data.append(['Vulnerable:', Paragraph('<para><font color=%s><b>%s</b></font> (<i>%s</i> accuracy)</para>' % (('red', 'YES', tb[tag+'_accuracy']) if max([0]+[len(x) for x in cves_lists]) else ('green', 'NO', tb[tag+'_accuracy'])), textstyle)])
+                data.append(['Known exploits:', Paragraph('<para><font color=%s><b>%s</b></font></para>' % (('red', exploit_count) if exploit_count>0 else ('green', exploit_count)), textstyle)])
             entries.append(Table(data, None, None, hAlign='LEFT'))
         
         # for each fs
@@ -113,7 +114,7 @@ class Module(GenericModule):
             # ADD SYSTEM INFO
             if 'system' in fs:
                 entries.append(Paragraph('<para spaceBefore=20>System info<para>', headingstyle))
-                data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple] else x[1]] for x in fs['system']+fs['os']]
+                data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple, set] else x[1]] for x in fs['system']+fs['os']]
                 t = Table(data, None, None, hAlign='LEFT')
                 t.setStyle(TableStyle([        
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -164,7 +165,8 @@ class Module(GenericModule):
                     vulnerable[key][(0 if x[5] == 'High' else (1 if x[5] == 'Medium' else 2))] += 1
                 notnull = lambda x: x if x > 0 else ''
             for x in sorted(vulnerable.keys(), key=lambda x: x[0]):
-                data.append((x[0], self.limit(x[1], 20), notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
+                name = self.get_name_with_origin(x[0])
+                data.append((name, self.limit(x[1], 20), notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
                 for i in range(0, 3):
                     totals[i] += vulnerable[x][i]
             data.append(['Total:', '', totals[0], totals[1], totals[2]])
@@ -187,11 +189,14 @@ class Module(GenericModule):
             # ADD CVEs
             if 'cves' in fs and len(fs['cves'])>0:
                 entries.append(Paragraph('<para spaceBefore=30>Detected vulnerabilities<para>', headingstyle))
-                for c in fs['cves']:
+                # exploitable first
+                for c in sorted(fs['cves'], key=lambda x: x[4] not in exploits): 
                     if len(c) < 14:
                         continue
                     if c[6] == '2.0': # CVSS 2.0
-                        data = [['', c[4], '%s %s\n(%s %s %s)\n' % (c[1], self.limit(c[14], 20), c[0], c[1], c[2]), 'Base:', c[8]], ['', '', '', 'Impact:', c[9]], ['', '', '', 'Exploitability:', c[10]], ['', c[11], '', 'Score:', c[7]], [Paragraph('<para align=justify>'+c[12]+'</para>', textstyle), '', '', '', ''], ['', '', '', '', '']]
+                        description = c[12].replace('<', '&lt;').replace('>', '&gt;')
+                        para_exploits = '' if c[4] not in exploits.keys() else Paragraph('<para align=justify>Exploits: '+', '.join(exploits[c[4]])+'</para>', textstyle)
+                        data = [['', c[4], '%s %s\n(%s %s %s)\n' % (self.get_name_with_origin(c[1]), self.limit(c[14], 20), c[0], c[1], c[2]), 'Base:', c[8]], ['', '', '', 'Impact:', c[9]], ['', '', '', 'Exploitability:', c[10]], ['', c[11], '', 'Score:', c[7]], [Paragraph('<para align=justify>'+description+'</para>', textstyle), '', '', '', ''], [para_exploits, '', '', '', '']]
                     else:
                         data = []
                     t = Table(data, colWidths=(0.5*cm, 6*cm, 7*cm, 2.5*cm, 1.5*cm))
@@ -208,6 +213,7 @@ class Module(GenericModule):
                         #('LINEBEFORE', (-1, 0), (-1, -3), 1, color),
                         #('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.black),
                         #('LINEABOVE', (0, -2), (-1, -2), 1, colors.black),
+                        ('SPAN', (0, -1), (-1, -1)), # exploit
                         ('SPAN', (0, -2), (-1, -2)), # description
                         ('SPAN', (1, 0), (1, 2)), # cve
                         ('SPAN', (2, 0), (2, -3)), # package
@@ -223,6 +229,17 @@ class Module(GenericModule):
 
         # # # # # # # #
         return None
+    
+    def get_name_with_origin(self,  name):
+        tag = self.parameters['TAG'].value
+        if name in tb[tag+'_fake_packages']:
+            name += ' (detected)'
+        elif name in tb[tag+'_alias_packages']:
+            name += ' (alias)'
+        return name
+        
+    
+    
     
     def limit(self, string, maxlen):
         if len(string)>maxlen-3:
