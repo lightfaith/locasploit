@@ -42,42 +42,18 @@ def execute_command(command):
     
     # test playground
     elif command == 'test':
-        from reportlab.pdfgen import canvas
-        from reportlab.lib import colors
-        from reportlab.lib.units import cm
-        from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import KeepTogether, SimpleDocTemplate, Table, TableStyle, Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
-        styles = getSampleStyleSheet()
+        m = lib.modules['miscellaneous.time.timer']
+        m.parameters['TIMEOUT'].value = 10
+        start = 0.0
+        timeout = 10
+        j1 = m.run()
+        s1 = lib.scheduler.add(m.name, start, j1, timeout, [])
+        j2 = m.run()
+        s2 = lib.scheduler.add(m.name, start, j2, timeout, [])
+        j3 = m.run()
+        lib.scheduler.add(m.name, start, j3, timeout, [s1, s2])
         
-        #c = canvas.Canvas('test.pdf')
-        doc = SimpleDocTemplate('test.pdf', pagesize=A4)
-        entries = []
-        for c in cves:
-            if c[3] == '2.0': # CVSS 2.0
-                data = [['', c[0], c[1]+' '+c[2], 'Base:', c[5]], ['', '', '', 'Impact:', c[6]], ['', '', '', 'Exploitability:', c[7]], ['', '', '', 'Score:', c[4]], [Paragraph('<para align=justify>'+c[9]+'</para>', styles['BodyText']), '', '', '', ''], ['', '', '', '']]
-            t = Table(data, colWidths=(0.5*cm, 8*cm, 5*cm, 3*cm, 2*cm))
-            color = colors.yellow # low severity
-            if c[8] == 'Medium':
-                color = colors.orange
-            elif c[8] == 'High':
-                color = colors.lavender
-            t.setStyle(TableStyle([
-                #('GRID', (0, -2), (-1, -2), 0.5, colors.grey),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                #('BACKGROUND', (0, 0), (-1, 3), color),
-                ('BACKGROUND', (0, 0), (0, 3), color),
-                #('LINEBEFORE', (-1, 0), (-1, -3), 1, color),
-                #('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.black),
-                #('LINEABOVE', (0, -2), (-1, -2), 1, colors.black),
-                ('SPAN', (0, -2), (-1, -2)), # description
-                ('SPAN', (1, 0), (1, -3)), # cve
-                ('SPAN', (2, 0), (2, -3)), # package
-            ]))
-            entries.append(KeepTogether(t))
-        doc.build(entries)
-        #c.showPage()
-        #c.save()
+
         print('-' * 20)
     
     # help
@@ -290,8 +266,8 @@ def execute_command(command):
                 log.err('This module cannot be executed.')
             log.info('Module %s has been checked in %s.' % (m.name, log.show_time(end-start)))
     
-    # run
-    elif command in ['run', 'execute']:
+    # run, waitfor
+    elif command in ['run', 'execute'] or command.startswith('waitfor '):
         m = lib.active_module
         if m is None:
             log.warn('Choose a module first.')
@@ -307,7 +283,7 @@ def execute_command(command):
                 
                 start = time.time()
                 job = m.run() # result = None or thread
-                if job is None: 
+                if job is None:
                     # no thread running
                     end = time.time()
                     log.info('Module %s has terminated (%s).' % (m.name, log.show_time(end-start)))                     
@@ -324,12 +300,19 @@ def execute_command(command):
                         except:
                             print('Y')
                             log.err(sys.exc_info()[1])
-                else: 
+                else:
                     # thread returned, will run in the background
-                    if 'TIMEOUT' in lib.active_module.parameters:
-                        lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value)
-                    else:
-                        lib.scheduler.add(m.name, start, job)
+                    waitfor = command[len('waitfor '):].split(' ') if command.startswith('waitfor ') else None
+                    timeout = lib.active_module.parameters['TIMEOUT'].value if 'TIMEOUT' in lib.active_module.parameters else None
+                    lib.scheduler.add(m.name, start, job, timeout, waitfor)
+                    #if 'TIMEOUT' in lib.active_module.parameters:
+                    #    lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value, )
+                    #else:
+                    #    lib.scheduler.add(m.name, start, job)
+            else: # check failed, which could be no problem for waitfor
+                if command.startswith('waitfor '):
+                    log.warn('Check for module %s failed, but there are modules it waits for...' % (m.name))
+                
             
     # print command history
     elif command == 'history':
@@ -378,6 +361,13 @@ def execute_command(command):
         value = lib.tb
         for key in keys:
             try:
+                # if dict allow keys() and items()
+                if type(value) == dict and key == 'keys()':
+                    value = list(value.keys())
+                    continue
+                if type(value) == dict and key == 'values()':
+                    value = list(value.values())
+                    continue
                 # if not present, try int
                 if key not in value and key.isdigit():
                     key = int(key)
@@ -725,15 +715,19 @@ def print_help():
         ('del NAME, unset NAME', 'unset global parameter'),
         ('check', 'check if module will be successful'),
         ('run, execute', 'run the module'),
+        ('waitfor 1', 'execute module (which can run in background) after job #1 terminates'),
+        ('waitfor conn', 'execute module (which can run in background) after all *conn* jobs terminate'),
         ('history', 'show command history'),
         ('module_history', 'show history of selected modules'),
         ('tb', 'show the Temporary Base'),
         ('tb a 1', 'show content of TB > a > 1'),
+        ('tb a keys()', 'show keys of dict TB > a'),
+        ('tb a values()', 'show values of dict TB > a'),
         ('tb del a', 'delete content of TB > a'),
         ('jobs', 'show jobs in background'),
         ('jobs kill 1', 'kill background job #1'),
         ('connections', 'show active connections'),
-        ('connections kill ssh://user@8.8.8.8:22', 'kill specified connection'),
+        ('connections kill ssh://user@8.8.8.8:22/', 'kill specified connection'),
         ('session', 'show number of actual session'),
         ('session new', 'set session number to a new value'),
         ('session 1', 'set session number to 1'),
