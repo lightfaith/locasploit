@@ -346,7 +346,12 @@ class DBAnalysis(DB):
     
     # SESSION 
     def get_last_session(self):
-        result = self.get_column(self.execute("SELECT MAX(sessionid) FROM session"), 0)[0]
+    
+        result = self.execute("SELECT MAX(sessionid) FROM session")
+        try:
+            result = self.get_column(result, 0)[0]
+        except:
+            return None
         if result is None:
             return 1
         return result

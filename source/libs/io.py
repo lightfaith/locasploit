@@ -153,20 +153,32 @@ def write_file(system, path, content, lf=True, utf8=False):
         return IO_ERROR
 
 
+def mkdir(system, path):
+    fullpath = get_fullpath(system, path)
+    if can_read(system, path):
+        typ = get_file_info(system, path)['type']
+        if typ != 'd':
+            log.err('This file already exists (and is not a directory).')
+        return
+    
+    if system.startswith('/'): # local or sub
+        os.mkdir(fullpath)
+    #TODO
+
 def delete(system, path):
-    # regular file?
-    type = get_file_info(system, path)['type']
+    typ = get_file_info(system, path)['type']
     fullpath = get_fullpath(system, path)
 
     if system.startswith('/'): # local or sub
-        if type == 'f':
+        if typ == 'f':
             os.remove(fullpath)
-        elif type == 'd':
+        elif typ == 'd':
             try:
                 # empty directory?
                 os.rmdir(fullpath)
             except:
                 # recursively?
+                import shutil
                 shutil.rmtree(fullpath)
 
 #def get_basename(system, path):
@@ -176,14 +188,14 @@ def delete(system, path):
 #    return IO_ERROR # bad
 # NOT NECESSARY, os.path.basename(path) should be sufficient
 
-def get_file_info(system, path):
+def get_file_info(system, path, verbose=False):
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
         return IO_ERROR
-        
+    
+    result = {}    
     if system.startswith('/'): # local or sub
         if can_read(system, path):
-            result = {}
             # TODO platform-specific
             stats = os.stat(fullpath)
             stm = stats.st_mode
@@ -194,10 +206,18 @@ def get_file_info(system, path):
             result['ATIME'] = stat.ST_ATIME
             result['MTIME'] = stat.ST_MTIME
             result['CTIME'] = stat.ST_CTIME # actually mtime on UNIX, TODO
-            return result
         else:
-            log.err('Cannot get stats of \'%s\'.' % (fullpath))
-            return IO_ERROR
+            if verbose:
+                log.info('File \'%s\' is not accessible.' % (fullpath))
+            result['type'] = None
+            result['permissions'] =  None
+            result['UID'] = None
+            result['GID'] = None
+            result['ATIME'] = None
+            result['MTIME'] = None
+            result['CTIME'] = None
+        return result
+
     else: # SSH/FTP/TFTP/HTTP
         # NOT IMPLEMENTED
         return IO_ERROR
