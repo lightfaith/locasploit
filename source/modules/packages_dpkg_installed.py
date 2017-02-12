@@ -64,14 +64,26 @@ class Module(GenericModule):
         activeroot = self.parameters['ACTIVEROOT'].value
         tag = self.parameters['TAG'].value
         
+        results = []
         content = io.read_file(activeroot, '/var/lib/dpkg/status')
         if content == IO_ERROR:
             log.err('Cannot read /var/lib/dpkg/status!')
             return None
-        info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package:', 'Status:', 'Version'))]
-        
-        results = [(tag, info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
-        tb[tag] = [(x[1], x[2], x[3]) for x in results]
+        #info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package:', 'Status:', 'Version'))]
+        #results = [(tag, info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]] # TODO fix this like in opkg
+        info = list(zip(*[iter([x for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))])]*3))
+        for entry in info:
+            try:
+                pkg = [x.partition(' ')[2] for x in entry if x.startswith('Package')][0]
+                version = [x.partition(' ')[2] for x in entry if x.startswith('Version')][0]
+                status = [x.partition(' ')[2] for x in entry if x.startswith('Status')][0]
+            except: # weird order, skip
+                continue
+            if 'installed' in status:
+                results.append((pkg, None, version))
+
+        #tb[tag] = [(x[1], x[2], x[3]) for x in results]
+        tb[tag] = results
         
         #db['vuln'].add_tmp(results)
         #if not silent:

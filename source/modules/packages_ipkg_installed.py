@@ -64,8 +64,8 @@ class Module(GenericModule):
         tag = self.parameters['TAG'].value
         
         results = []
+        # TODO also /var/lib/ipkg/info/? but this is bad, use from opkg 
         """
-        # TODO also /var/lib/ipkg/info/?
         path = '/usr/lib/opkg/info'
         # get control files
         from os import listdir

@@ -89,8 +89,18 @@ class Module(GenericModule):
             if len(results) == 0:
                 log.err('Cannot read /usr/lib/opkg/status')
         else:
-            info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))]
-            results += [(info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
+            #info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))]
+            #results += [(info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
+            info = list(zip(*[iter([x for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))])]*3))
+            for entry in info:
+                try:
+                    pkg = [x.partition(' ')[2] for x in entry if x.startswith('Package')][0]
+                    version = [x.partition(' ')[2] for x in entry if x.startswith('Version')][0]
+                    status = [x.partition(' ')[2] for x in entry if x.startswith('Status')][0]
+                except: # weird order, skip
+                    continue
+                if 'installed' in status:
+                    results.append((pkg, None, version))
 
         # insert into TB
         tb[tag] = results
