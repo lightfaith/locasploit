@@ -8,6 +8,9 @@ import source.libs.connection
 from source.libs.db import *
 import source.libs.log as log
 from source.libs.io import get_system_type_from_active_root
+import faulthandler
+
+faulthandler.enable()
 
 def exit_program(signal, frame):
     if signal == -1: # immediate termination due to -h or bad parameter
@@ -109,11 +112,15 @@ def command_exists(activeroot, c):
 
 def positive(string):
     """ Check if parameter represents positive state """
+    if type(string) == str:
+        string = string.lower()
     return string.lower() in lib.POSITIVE_STRINGS
 
 
 def negative(string):
     """ Check if parameter represents negative state """
+    if type(string) == str:
+        string = string.lower()
     return string.lower() in lib.NEGATIVE_STRINGS
 
 

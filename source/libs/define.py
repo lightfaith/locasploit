@@ -59,8 +59,8 @@ else:
 global_parameters['ACTIVEROOT'] = '/'                    # unless changed, all info treated as on local OS
 
 # Miscellaneous constants
-POSITIVE_STRINGS = ['y', 'yes', 'true', 't', '1', '+']
-NEGATIVE_STRINGS = ['n', 'no', 'false', 'f', '0', '-']
+POSITIVE_STRINGS = ['y', 'yes', 'true', 't', '1', '+', True]
+NEGATIVE_STRINGS = ['n', 'no', 'false', 'f', '0', '-', False]
 QUIT_STRINGS = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
 
 # module check results
