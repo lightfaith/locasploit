@@ -30,6 +30,8 @@ In version 1.0 the following authentication methods are supported:
     agent    - ssh-agent is used 
     password - user is asked for password
     pubkey   - private key is used, user must provide password if necessary
+
+Login with empty password is not possible.
 """
         
         self.dependencies = {
@@ -94,8 +96,8 @@ In version 1.0 the following authentication methods are supported:
             except paramiko.ssh_exception.NoValidConnectionsError:
                 log.err('Cannot connect to the host \'%s\'.' % (host))
                 client = None
-            except:
-                log.err('Connection with ssh-agent failed.')
+            except Exception as e:
+                log.err('Connection with ssh-agent failed: %s.' % (str(e)))
                 client = None
                 
         if method == 'password':
@@ -106,8 +108,8 @@ In version 1.0 the following authentication methods are supported:
             except paramiko.ssh_exception.NoValidConnectionsError:
                 log.err('Cannot connect to the host \'%s\'.' % (host))
                 client = None
-            except:
-                log.err('Connection with password failed.')
+            except Exception as e:
+                log.err('Connection with password failed: %s.' % (str(e)))
                 client = None
         
         if method == 'pubkey':
@@ -129,8 +131,8 @@ In version 1.0 the following authentication methods are supported:
                 except paramiko.ssh_exception.NoValidConnectionsError:
                     log.err('Cannot connect to the host \'%s\'.' % (host))
                     client = None
-                except:
-                    log.err('Connection with pubkey failed.')
+                except Exception as e:
+                    log.err('Connection with pubkey failed: %s.' % (str(e)))
                     client = None
         
         if client is not None:
@@ -139,6 +141,13 @@ In version 1.0 the following authentication methods are supported:
             c = Connection('ssh://%s@%s:%s/' % (user, host, port), client, 'SSH')
             lib.connections.append(c)
             log.ok('Connection created: %s' % (c.description))
+            # test sftp
+            try:
+                sftp = client.open_sftp()
+                sftp.close()
+            except:
+                log.err('SFTP connection cannot be established.')
+                
             
             # client.close() is called on connection kill request or program termination
            

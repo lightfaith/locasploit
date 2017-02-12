@@ -36,7 +36,7 @@ def get_fd(system, path, mode):
         return None
 
 #def read_file(system, path, dbfile=True, utf8=False):
-def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0, verbose=True):
+def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0, verbose=False):
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
         return IO_ERROR
@@ -224,6 +224,9 @@ def can_read(system, path):
                     f = sftp.open(path)
                 except (PermissionError, FileNotFoundError):
                     return False
+                except Exception as e:
+                    #log.err('Exception raised in io.can_read(): %s.' % (str(e)))
+                    return False
                 result = f.readable()
             sftp.close()
             return result
@@ -290,6 +293,14 @@ def list_dir(system, path):
             return os.listdir(get_fullpath(system, path))
         except:
             return []
+    elif system.startswith('ssh://'):
+        c = get_ssh_connection(system)
+        try:
+            sftp = c.connectors[0].open_sftp()
+            result = sftp.listdir(path)
+        except:
+            result = []
+        return result
     else:
         # TODO
         return []
@@ -352,7 +363,7 @@ def get_file_type_char(mask):
         return known[mask]
     return '?'
 
-def get_system_type_from_active_root(activeroot, verbose=False):
+def get_system_type_from_active_root(activeroot, verbose=False, dontprint=''):
     if activeroot == '/':
         return sys.platform
     #
@@ -364,7 +375,7 @@ def get_system_type_from_active_root(activeroot, verbose=False):
     #
     
     # chroot or similar?
-    if activeroot.startswith(('/', 'ssh://')): # local or sub or ssh
+    if activeroot.startswith(('/', 'ssh://')): # sub or ssh
         # linux should have some folders in / ...
         success = 0
         linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', 'lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
@@ -374,8 +385,11 @@ def get_system_type_from_active_root(activeroot, verbose=False):
         linux_score = success/len(linux_folders)
         
         if verbose:
-            log.info('Linux score for \'%s\': %f' % (activeroot, linux_score))
-        if linux_score > 0.4: # this should be linux
+            if type(dontprint) != str or dontprint=='':
+                log.info('Linux score for \'%s\': %f' % (activeroot, linux_score))
+            else:
+                log.info('Linux score for \'%s\': %f' % (activeroot.partition(dontprint)[2], linux_score))
+        if linux_score > 0.3: # this should be linux
             #TODO write into DB
             return 'linux'
         
