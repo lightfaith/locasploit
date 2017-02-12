@@ -10,10 +10,15 @@ def get_fullpath(system, path):
     if system.startswith('/'): # local or sub
         if path.startswith('./') or  path.startswith('../') or path.startswith('.\\') or path.startswith('..\\'): # enable relative path also
             return path
-        else:
-            while path.startswith('/'): # remove leading slashes
-                path = path[1:]
-            return os.path.join(system, path)
+        if path.startswith('~/'): #TODO test
+            print('IO returning ~ address...')
+            return os.path.join(lib.global_parameters['HOME'], path[2:])
+
+        while path.startswith('/'): # remove leading slashes
+            path = path[1:]
+        return os.path.join(system, path)
+    elif system.startswith('ssh://'):
+        return system+('/' if not system.endswith('/') else '')+path
     else: 
         # NOT IMPLEMENTED
         return IO_ERROR
@@ -22,36 +27,40 @@ def get_fd(system, path, mode):
     fullpath = get_fullpath(system, path)
     if system.startswith('/'): # local or sub
         return open(fullpath, mode)
+    elif system.startswith('ssh://'):
+        c = get_ssh_connection(system)
+        sftp = c.connectors[0].open_sftp() # will be closed on connection kill or program termination
+        c.connectors.append(sftp)
+        return sftp.open(path, mode)
+    else:
+        return None
 
 #def read_file(system, path, dbfile=True, utf8=False):
-def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0):
+def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0, verbose=True):
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
         return IO_ERROR
     if not can_read(system, path):
-        if is_link(system, path):
-            log.err('\'%s\' (on \'%s\') is a symlink to \'%s\' but it cannot be read.' % (path, system, get_link(system, path)))
-        else:
-            log.err('Cannot read \'%s\'.' % (fullpath))
+        if verbose:
+            if is_link(system, path):
+                log.err('\'%s\' (on \'%s\') is a symlink to \'%s\' but it cannot be read.' % (path, system, get_link(system, path)))
+            else:
+                log.err('Cannot read \'%s\'.' % (fullpath))
         return IO_ERROR
         
     open_and_close = (f is None)
         
     if system.startswith('/'): # local or sub
-        try:
-            if forcebinary:
-                raise TypeError # will be opened as binary
-            if open_and_close:
+        if open_and_close:
+            try:
+                if forcebinary:
+                    raise TypeError # will be opened as binary
                 f = open(fullpath, 'r', encoding='utf-8')
-            result = f.read() if chunk == 0 else f.read(chunk)
-            if open_and_close:
-                f.close()
-        except: # a binary file?
-            if open_and_close:
+            except: # a binary file?
                 f = open(fullpath, 'rb')
-            result = f.read() if chunk == 0 else f.read(chunk)
-            if open_and_close:
-                f.close()
+        result = f.read() if chunk == 0 else f.read(chunk)
+        if open_and_close:
+            f.close()
                 
         if usedb == True or usedb == DBFILE_NOCONTENT:
             fileinfo = get_file_info(system, path)
@@ -62,7 +71,34 @@ def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0):
                 log.err('Database query failed.')
                 return IO_ERROR
         return result
-    else: # SSH/FTP/TFTP/HTTP
+
+    elif system.startswith('ssh://'):        
+        c = get_ssh_connection(system)
+        if c is not None:
+            if open_and_close:
+                try:
+                    sftp = c.connectors[0].open_sftp()
+                except:
+                    log.err('Cannot create SFTP connection.')
+                    return IO_ERROR
+                try:
+                    if forcebinary:
+                        raise TypeError # will be treated as binary
+                    f = sftp.open(path, 'r')
+                except:
+                    f = sftp.open(path, 'rb')
+            result = f.read() if chunk == 0 else f.read(size=chunk)
+            if open_and_close:
+                sftp.close()
+            if forcebinary:
+                return result
+            else:
+                return result.decode('utf-8')
+        else:
+            log.err('Cannot read file on \'%s\' - no such connection' % (system))
+            return IO_ERROR
+        # TODO usedb, chunk etc.
+    else: # FTP/TFTP/HTTP
         # NOT IMPLEMENTED
         return IO_ERROR
 
@@ -171,9 +207,29 @@ def can_read(system, path):
     #print(fullpath)
     if fullpath == IO_ERROR:
         return False
-    if os.access(fullpath, os.R_OK):
-        return True
-    else:
+    if system.startswith('/'):
+        if os.access(fullpath, os.R_OK):
+            return True
+        else: 
+            return False
+    elif system.startswith('ssh://'):
+        c = get_ssh_connection(system)
+        if c is not None:
+            try:
+                sftp = c.connectors[0].open_sftp()
+                fs = sftp.listdir(path)
+                result = len(fs)>0
+            except: # not a directory
+                try:
+                    f = sftp.open(path)
+                except (PermissionError, FileNotFoundError):
+                    return False
+                result = f.readable()
+            sftp.close()
+            return result
+        else:
+            return False # no connection
+    else: # unknown system
         return False
 
 def can_write(system, path):
@@ -296,7 +352,7 @@ def get_file_type_char(mask):
         return known[mask]
     return '?'
 
-def get_system_type_from_active_root(activeroot):
+def get_system_type_from_active_root(activeroot, verbose=False):
     if activeroot == '/':
         return sys.platform
     #
@@ -308,7 +364,7 @@ def get_system_type_from_active_root(activeroot):
     #
     
     # chroot or similar?
-    if activeroot.startswith('/'): # local or sub
+    if activeroot.startswith(('/', 'ssh://')): # local or sub or ssh
         # linux should have some folders in / ...
         success = 0
         linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', 'lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
@@ -317,10 +373,19 @@ def get_system_type_from_active_root(activeroot):
                 success += 1
         linux_score = success/len(linux_folders)
         
-        log.info('Linux score for \'%s\': %f' % (activeroot, linux_score))
-        if linux_score > 0.5: # this should be linux
+        if verbose:
+            log.info('Linux score for \'%s\': %f' % (activeroot, linux_score))
+        if linux_score > 0.4: # this should be linux
             #TODO write into DB
             return 'linux'
         
     #TODO NOT IMPLEMENTED
     return 'unknown'
+
+def get_ssh_connection(system):
+    # returns first connection for desired system
+    cs = [x for x in lib.connections if x.description == system]
+    if len(cs)>0:
+        return cs[0]
+    return None
+    

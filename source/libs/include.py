@@ -4,6 +4,7 @@ import os, sys, re, time, importlib, imp, subprocess,  signal, threading
 import source.libs.define as lib
 #import source.libs.kb
 import source.libs.scheduler
+import source.libs.connection
 from source.libs.db import *
 import source.libs.log as log
 from source.libs.io import get_system_type_from_active_root
@@ -14,6 +15,11 @@ def exit_program(signal, frame):
         sys.exit(0)
     
     log.attachline()
+    log.info('Terminating all connections...')
+    for c in lib.connections:
+        for con in c.connectors[::-1]:
+            con.close() # for Paramiko, TODO for every type?
+    
     log.info('Killing all the threads...')
     
     # stop the scheduler (will stop all threads)

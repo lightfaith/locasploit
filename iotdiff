@@ -1,0 +1,20 @@
+use analysis.iot
+set TMPDIR /media/root/Entertainment/locasploit_files/extracted
+set TARGET /media/root/Entertainment/locasploit_files/firmwares/dragino2-yun-common-v2.0.7-rootfs-squashfs.bin 
+set EXTRACT yes
+set METHOD image
+set TAG test1
+set ACCURACY build
+#set ALIASES no
+run
+set TARGET /media/root/Entertainment/locasploit_files/firmwares/dragino-yun--v4.1.1-squashfs-sysupgrade.bin
+set TAG test2
+run
+back
+use report.iot.diff
+set TAG1 test1
+set TAG2 test2
+set OUTPUTFILE /tmp/report.pdf
+run
+back
+

@@ -7,7 +7,7 @@ prompt = ' >  '                                           # current prompt strin
 module_objects = []                                       # temporary list for module loading
 modules = {}                                              # dictionary of all modules
 active_module = None                                      # currently active module
-#from_input_file = False                                   # commands provided from input file
+#from_input_file = False                                  # commands provided from input file
 commands = []                                             # list of commands to execute
 command_history = []                                      # history of commands
 module_history = []                                       # history of selected modules
@@ -16,6 +16,9 @@ active_session = None                                     # active session (for 
 dicts = {}                                                # dictionaries (for crypto, cracking etc.)
 if 'tb' not in vars():
     tb = {}                                             ## temporary base, initialized in tb.py
+
+connections = []                                          # connections (SSH, ...)
+
 
 main_thread = threading.current_thread()
 if 'scheduler' not in vars():

@@ -3,6 +3,7 @@
 from source.libs.include import *
 from source.libs.define import *
 from source.libs.parameters import *
+from source.libs.connection import *
 from source.libs.author import *
 import source.libs.io as io
 

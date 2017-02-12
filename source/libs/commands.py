@@ -404,6 +404,30 @@ def execute_command(command):
         else:
             log.err('You must specify job ID.')
 
+    # connections
+    elif command == 'connections':
+        maxt = max([4]+[len(x.typ) for x in lib.connections])
+        maxc = max([9]+[len(x.description) for x in lib.connections])
+        
+        log.writeline('%*s  %-*s' % (maxt, 'TYPE', maxc, 'CONNECTOR'))
+        log.writeline('%s  %s' % ('-' * maxt, '-' * maxc), log.Color.PURPLE)
+
+        for c in lib.connections:
+            log.writeline('%*s  %-*s' % (maxt, c.typ, maxc, c.description))
+
+    elif command.startswith('connections kill '):
+        newconnections = []
+        for c in lib.connections:
+            if c.description == command[17:]:
+                for con in c.connectors[::-1]:
+                    con.close() #TODO for SSH, but also for others?
+            else:
+                newconnections.append(c)
+        if len(newconnections) != len(lib.connections):
+            log.info('Connections \'%s\' killed' % (c.description))
+        lib.connections = newconnections
+
+    # sessions
     elif command == 'session':
         log.info('Currently working with session #%d.' % lib.active_session)
     
@@ -708,6 +732,8 @@ def print_help():
         ('tb del a', 'delete content of TB > a'),
         ('jobs', 'show jobs in background'),
         ('jobs kill 1', 'kill background job #1'),
+        ('connections', 'show active connections'),
+        ('connections kill ssh://user@8.8.8.8:22', 'kill specified connection'),
         ('session', 'show number of actual session'),
         ('session new', 'set session number to a new value'),
         ('session 1', 'set session number to 1'),

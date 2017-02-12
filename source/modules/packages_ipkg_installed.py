@@ -7,24 +7,24 @@ class Module(GenericModule):
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
         
-        self.name = 'packages.opkg.installed'
+        self.name = 'packages.ipkg.installed'
         self.short_description = 'Finds versions of installed packages.'
         self.references = [
         ]
-        self.date = '2016-11-05'
+        self.date = '2017-01-17'
         self.license = 'GNU GPLv2'
         self.version = '1.0'
         self.tags = [
             'linux',
             'package',
             'packages',
-            'opkg',
+            'ipkg',
             'installed',
             'version',
         ]
         
         
-        self.description = """This module looks into /usr/lib/opkg/info/*.control and /usr/lib/opkg/status files to determine version of all installed packages.
+        self.description = """This module looks into /usr/lib/ipkg/status file to determine version of all installed packages.
 """
         
         self.dependencies = {
@@ -52,10 +52,9 @@ class Module(GenericModule):
             if not silent:
                 log.warn('Target system does not belong to Linux family.')
             result = CHECK_UNLIKELY
-        # can open /usr/lib/opkg/info ??
-        if not io.can_read(activeroot, '/usr/lib/opkg/info') and not io.can_read(activeroot, '/usr/lib/opkg/status'):
+        if not io.can_read(activeroot, '/usr/lib/ipkg/status'):
             if not silent:
-                log.err('Cannot open /usr/lib/opkg/info/ directory nor /usr/lib/opkg/status file.')
+                log.err('Cannot open /usr/lib/ipkg/status file.')
             result = CHECK_FAILURE
         return result
 
@@ -63,11 +62,14 @@ class Module(GenericModule):
         silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
         tag = self.parameters['TAG'].value
+        
+        results = []
+        """
+        # TODO also /var/lib/ipkg/info/?
         path = '/usr/lib/opkg/info'
         # get control files
-        #from os import listdir
+        from os import listdir
         cfiles = [x for x in io.list_dir(activeroot, path) if x.endswith('.control')]
-        results = []
         
         # read .control files
         for cfile in cfiles:
@@ -82,12 +84,12 @@ class Module(GenericModule):
             # get version
             version = pkgdata[1]
             results.append((product, None, version))
-        
+        """
         # read status file
-        content = io.read_file(activeroot, '/usr/lib/opkg/status')
+        content = io.read_file(activeroot, '/usr/lib/ipkg/status')
         if content == IO_ERROR:
             if len(results) == 0:
-                log.err('Cannot read /usr/lib/opkg/status')
+                log.err('Cannot read /usr/lib/ipkg/status')
         else:
             info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))]
             results += [(info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]

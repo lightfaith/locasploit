@@ -48,7 +48,7 @@ class Module(GenericModule):
         # # # # # # # #
         
         # get /etc/issue
-        issue = io.read_file(activeroot, '/etc/issue')
+        issue = io.read_file(activeroot, '/etc/issue', verbose=False)
         if issue != IO_ERROR:
             issue = '\n'.join([x for x in issue.splitlines() if len(x.strip())>0])
             if not silent:

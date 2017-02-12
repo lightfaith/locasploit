@@ -1,0 +1,20 @@
+use connection.ssh
+set HOST localhost
+set METHOD agent
+run
+back
+use analysis.iot
+set METHOD ssh
+set TARGET ssh://root@localhost:22/
+set TMPDIR /tmp/
+set TAG sshtest
+set EPOCH no
+#set EPOCH yes
+run
+back
+use report.iot
+set TAG sshtest
+set OUTPUTFILE /tmp/report.pdf
+run
+back
+

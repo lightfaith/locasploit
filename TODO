@@ -1,32 +1,40 @@
-DONE:		module use by best match
-			exit too dangerous
-			lang comparison in db
-			delete_dictionary()
-			apply setg to current module
-			is_admin() for any user and activeroot
-			!command
-			setg PARAM $VARIABLE (from TB) - for every command
-			tb del a b 0
-			dict exports different SHA1
-			cve prev version
-			cve empty version
-			accuracy fix
-			accuracy test
-PARTIALLY:	kb->db
-TODO:		ACTIVEROOT for linux.* modules
-			check/fix silent in modules
-			delete session (module?)
-SELECT DISTINCT P.name, V.value, CVE.name FROM Product P INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name AND version = v.value)
-			http://www.nsrl.nist.gov/Downloads.htm
-			https://nvd.nist.gov/download.cfm
-			http://cve.mitre.org/data/refs/refmap/source-EXPLOIT-DB.html
-			comment analysis.iot (steps, issues)
-			SSH support
-			QEMU support (at least manual)
-			changelog firmwares test
-			binwalk mounts? (romfs)
-			
+DONE:        
+            lang comparison in db
+            apply setg to current module
+            is_admin() for any user and activeroot
+            !command
+            setg PARAM $VARIABLE (from TB) - for every command
+            tb del a b 0
+            dict exports different SHA1
+           	wait for jobs
+			get exploit into db
+	        search pack || anal
+
+PARTIALLY:    kb->db
+            SSHize source/libs/io.py
+
+TODO:       
+			old:
+				ACTIVEROOT for linux.* modules
+				delete session (module?)
+            	check/fix silent in modules
+			new core:
+	            SSH with "open" method? (OpenWRT QEMU)
+			    usable after git clone
+			cves:
+	            cves not updated correctly if hashes are deleted
+            	http://www.nsrl.nist.gov/Downloads.htm
+			analysis:
+				use last extracted
+	            comment analysis.iot (steps, issues)
+           		binwalk mounts? (romfs)
+				allow as job
+TOTEST:
+            changelog firmwares test
+			nonroot user?
+			report diff  - exploits
+            
 
 totest: NAS (Synology), buffalo - nas-central.org
-		tplink
+        tplink
 
