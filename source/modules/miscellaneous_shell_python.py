@@ -68,7 +68,11 @@ This module uses Python's exec() function to execute any commands. These will ru
                 line = lib.commands[0]
                 del lib.commands[0]
             else:
-                line = func()
+                try:
+                    line = func()
+                except EOFError as e: # Ctrl+D => exit
+                    break
+
             if line in QUIT_STRINGS:
                 break
             try:

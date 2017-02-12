@@ -63,7 +63,10 @@ def main():
             break
         # add command into queue
         #lib.commands.append(func())
-        execute_command(func())
+        try:
+            execute_command(func())
+        except EOFError as e: # Ctrl+D => exit
+            exit_program(None, None)
     # end of main program loop
 
 # ###################

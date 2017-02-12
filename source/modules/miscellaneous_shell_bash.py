@@ -77,7 +77,10 @@ This module allows bash command execution.
                 if not silent:
                     log.attachline(line)
             else:
-                line = func()
+                try:
+                    line = func()
+                except EOFError as e: # Ctrl+D => exit
+                    break
 
             if line in QUIT_STRINGS:
                 break
