@@ -25,6 +25,13 @@ except SystemExit:
 def main():
     global_parameters['UUID'] = get_local_uuid()
     lib.active_session = db['analysis'].get_last_session()
+    if lib.active_session is None:
+        # Cannot get any session ID =>
+        # analysis.db is not accessible =>
+        # 'make has not been executed'
+        log.err('Cannot get session ID. Did you run \'make\'?')
+        exit_program(-1, None)
+        
     db['analysis'].create_session(lib.active_session)
     log.info('Currently working with session #%d.' % lib.active_session)
     # check if already admin

@@ -1,5 +1,5 @@
-use locasploit.update.cve
-#use locasploit.update.cve-year
+use locasploit.update.vulnerabilities
+#use locasploit.update.cve
 #set BACKGROUND no
 #set YEARS 2006 2007 2008
 run

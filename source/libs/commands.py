@@ -42,17 +42,8 @@ def execute_command(command):
     
     # test playground
     elif command == 'test':
-        m = lib.modules['miscellaneous.time.timer']
-        m.parameters['TIMEOUT'].value = 10
-        start = 0.0
-        timeout = 10
-        j1 = m.run()
-        s1 = lib.scheduler.add(m.name, start, j1, timeout, [])
-        j2 = m.run()
-        s2 = lib.scheduler.add(m.name, start, j2, timeout, [])
-        j3 = m.run()
-        lib.scheduler.add(m.name, start, j3, timeout, [s1, s2])
-        
+        import source.libs.io as io
+        io.mkdir('/', './vulnerabilities')
 
         print('-' * 20)
     
