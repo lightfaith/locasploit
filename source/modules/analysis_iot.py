@@ -81,6 +81,8 @@ Functionality can be divided in 5 steps:
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
             'TAG': Parameter(mandatory=True, description='Package info tag'),
             'EXTRACT': Parameter(value='yes', mandatory=True, description='Extraction will happen'),
+            'EPOCH': Parameter(value='no', mandatory=True, description='Version epoch will be taken into consideration'),
+            'ALIASES': Parameter(value='yes', mandatory=True, description='Also analyze common aliases for packages'),
         }
     
 
@@ -132,6 +134,8 @@ Functionality can be divided in 5 steps:
         accuracy = self.parameters['ACCURACY'].value
         tag = self.parameters['TAG'].value
         extract = positive(self.parameters['EXTRACT'].value)
+        use_epoch = positive(self.parameters['EPOCH'].value)
+        use_aliases = positive(self.parameters['ALIASES'].value)
         #outputfile = self.parameters['OUTPUTFILE'].value
         # # # # # # # #
         import time, hashlib
@@ -140,8 +144,17 @@ Functionality can be divided in 5 steps:
         tb[tag+'_accuracy'] = accuracy
         tb[tag+'_general'] = []
         tb[tag+'_general'].append(('Date', time.strftime("%d. %m. %Y")))
-        tb[tag+'_general'].append(('Target', target))
+        if method == 'ssh':
+            tb[tag+'_general'].append(('Target', target))
+        elif method == 'image':
+            path, filename = os.path.split(target)
+            tb[tag+'_general'].append(('Target', filename))
+            tb[tag+'_general'].append(('Location', path))
+            
         tb[tag+'_filesystems'] = []
+        exploits = {}
+        tb[tag+'_fake_packages'] = [] # like kernel for Debian systems (version is detected, but it is not a package)
+        tb[tag+'_alias_packages'] = [] # kernel is defined as linux_kernel in most CVEs
         
         # 1. Extraction
         if method == 'image':
@@ -159,22 +172,29 @@ Functionality can be divided in 5 steps:
                 ibe.parameters['TMPDIR'].value = tmpdir
                 ibe.run()
         
-            tmpdir = os.path.join(tmpdir, '_%s.extracted' % (os.path.basename(target))) # TODO how about rescans?
-            log.info('Analyzing data in \'%s\'...' % (tmpdir))
+            tmpdir = os.path.join(tmpdir, '_%s.extracted/' % (os.path.basename(target))) # TODO how about rescans?
+            log.info('', end='')
+            log.attachline('========================', log.Color.BLUE)
+            if io.can_read(activeroot, tmpdir):
+                log.info('Analyzing data in \'%s\'...' % (tmpdir))
+            else:
+                log.err('Cannot access %s' % (tmpdir))
 
             # 2. Root location
             log.info('Looking for directory trees..')
             #found = [x[:-len('/etc/passwd')] for x in io.find(activeroot, tmpdir, 'passwd') if x.endswith('/etc/passwd')]
-            found = [x[:-len('/etc')] for x in io.find(activeroot, tmpdir, 'etc') if io.get_system_type_from_active_root(x[:-len('/etc')], verbose=True) == 'linux'] 
+            found = [x[:-len('/etc')] for x in io.find(activeroot, tmpdir, 'etc') if io.get_system_type_from_active_root(x[:-len('/etc')], verbose=True, dontprint=tmpdir) == 'linux'] 
             if len(found) > 0 and not silent:
                 log.ok('Found %d linux directory trees.' % len(found))
         
         if method == 'ssh':
             found = [target]
+        
+        tb[tag+'_general'].append(('Aliases enabled', 'YES' if use_aliases else 'NO'))
 
         fscount = -1
         for f in found:
-            fscount += 1
+            fscount+=1
             log.info('', end='')
             log.attachline('------------------------', log.Color.BLUE)
             log.info('Analyzing %s:' % (f))
@@ -188,7 +208,15 @@ Functionality can be divided in 5 steps:
             crons = []
             startups = []
     
-            data['name'] = f[len(tmpdir)+1:]
+            if method == 'image':
+                data['name'] = f[len(tmpdir):]
+            elif method == 'ssh':
+                data['name'] = f[len(target):]
+                if not data['name'].startswith('/'):
+                    data['name'] = '/'+data['name']
+            else: # in case of new method
+                data['name'] = 'UNDEFINED DUE TO WEIRD METHOD'
+                
             # System info enumeration
             log.info('Dumping system info...')
             data['system'] = []
@@ -214,6 +242,7 @@ Functionality can be divided in 5 steps:
 
             leu = lib.modules['linux.enumeration.users']
             leu.parameters['ACTIVEROOT'].value = f
+            # leu.parameters['SILENT'].value = 'yes'
             leu.run()
             users += [x[2] for x in db['analysis'].get_users(f) if x[0] >= 1000]
             pusers += [(x[2] if x[2] == x[2].strip() else '%s' % (x[2])) for x in db['analysis'].get_users(f) if x[0] == 0]
@@ -221,6 +250,7 @@ Functionality can be divided in 5 steps:
             
             # 3. Package enumeration
             tb[tag+':%d_tmp_packages' % (fscount)] = [] # array for detected packages
+            tmp_packages = [] # cause multiple package managers overwrite tmp data in tb
             log.info('Enumerating package managers...')
             for p in self.packathors:
                 m = lib.modules['packages.%s.installed' % (p)]
@@ -229,25 +259,34 @@ Functionality can be divided in 5 steps:
                 m.parameters['SILENT'].value = 'yes'
                 if m.check() == CHECK_FAILURE:
                     continue
-                pms.append(p)
-                log.info('Detected \'%s\' package manager' % (p))
-                m.parameters['SILENT'].value = 'yes'
                 m.run()
-                # 'kernel' package is present when dealing with opkg, so...
-                if p == 'opkg':
-                    if tag+':%d_tmp_packages' % (fscount) in tb:
-                        kernels += [ps[2] for ps in [x for x in tb[tag+':%d_tmp_packages' % (fscount)] if x[0] == 'kernel']]
-        
-            
+                if len(tb[tag+':%d_tmp_packages' % (fscount)]) == 0:
+                    continue
+                pms.append(p)
+                log.ok('Detected \'%s\' package manager' % (p))
+                tmp_packages += tb[tag+':%d_tmp_packages' % (fscount)]
+                # add also known aliases for packages (e.g. kernel = linux_kernel)
+                # 'kernel' package is present when dealing with opkg or ipkg, so...
+                if p in ['opkg', 'ipkg']:
+                    if len(kernels) == 0 and tag+':%d_tmp_packages' % (fscount) in tb:
+                            kernels += [ps[2] for ps in [x for x in tb[tag+':%d_tmp_packages' % (fscount)] if x[0] == 'kernel']]
+                # add kernel as "package" for other package managers
+                else:
+                    if len(kernels)>0:
+                        tmp_packages.append(('kernel', None, kernels[0]))
+                        tb[tag+'_fake_packages'].append('kernel')
+       
             if len(kernels) == 0:
                 kernels.append('UNKNOWN')
             # push gathered data into TB
             
             data['os'] = oses
-            data['system'].append(('Kernel', kernels))
-            data['system'].append(('Users', users))
-            data['system'].append(('Privileged users', pusers))
-            data['system'].append(('Startup scripts', startups))
+            data['system'].append(('Kernel', set(kernels)))
+            if len(users)>0:
+                data['system'].append(('Users', users))
+            if len(pusers)>0:
+                data['system'].append(('Privileged users', pusers))
+            #data['system'].append(('Startup scripts', startups))
             data['system'].append(('Package managers', pms))
             
             log.info('Getting cron data...')
@@ -259,11 +298,17 @@ Functionality can be divided in 5 steps:
             data['cron'] = crons
 
             log.info('Enumerating packages...')
-            data['packages'] = tb[tag+':%d_tmp_packages' % (fscount)]
+            if use_aliases:
+                alias_names, alias_packages = self.get_alias_packages(tmp_packages)
+            else:
+                alias_names = []
+                alias_packages = []
+            tb[tag+'_alias_packages'] += alias_names
+            data['packages'] = tmp_packages + alias_packages
             del tb[tag+':%d_tmp_packages' % (fscount)]
             packages = []
             if 'packages' in data:
-                packages = [(tag+':%d' % (fscount), x[0], x[1], self.get_accurate_version(accuracy, x[2])) for x in data['packages']]
+                packages = [(tag+':%d' % (fscount), x[0], x[1], self.get_accurate_version(accuracy, x[2], use_epoch)) for x in data['packages']]
 
             if len(packages) > 0:
                 db['vuln'].add_tmp(packages)
@@ -275,7 +320,7 @@ Functionality can be divided in 5 steps:
             
             cves = db['vuln'].get_cves_for_apps(tag+':%d' % (fscount), accuracy!='none')
             # accuratize the returned version for report
-            cves = [list(x[:2]) + [self.get_accurate_version(accuracy, x[2])] + list(x[3:]) for x in cves]
+            cves = [list(x[:2]) + [self.get_accurate_version(accuracy, x[2], use_epoch)] + list(x[3:]) for x in cves]
             #print(cves)
             #print()
             #print(tb[tag+'_packages'])
@@ -287,29 +332,70 @@ Functionality can be divided in 5 steps:
             #print(cves)
             data['cves'] = cves
             if not silent:
-                log.ok('Found %d CVEs.' % (len(cves)))
+                if len(cves)>0:
+                    log.ok('Found %d CVEs.' % (len(cves)))
+                else:
+                    log.info('No CVEs found.')
 
+            # 5. Exploit detection
+            log.info('Detecting exploits...')
+            for cve in set([x[4] for x in cves]):
+                exlist = db['vuln'].get_exploits_for_cve(cve)
+                if len(exlist)>0:
+                    exploits[cve] = exlist
+            
+            # nothing? don't report this filesystem
+            if len(data['cves'])+len(data['packages'])+len(oses+users+pusers+crons+startups) == 0 and 'UNKNOWN' in kernels:
+                continue
             tb[tag+'_filesystems'].append(data)
 
+        log.attachline('------------------------', log.Color.BLUE)
+        if len(exploits)>0:
+            if not silent:
+                log.ok('%d exploits found.' % (len(set([x for k,v in exploits.items() for x in v]))))
+            tb[tag+'_exploits'] = exploits
         # # # # # # # #
         return None
     
-    def get_accurate_version(self, accuracy, version):
+
+
+    def get_alias_packages(self, packages):
+        known = [
+            ('kernel', 'linux_kernel'),
+            ('apache', 'apache2', 'apache_webserver', 'apache_http_server'),
+        ]
+        alias_matches = []
+        result = []
+        for k in known:
+            for p in packages:
+                if p[0] in k:
+                    aliases = [(x, p[1], p[2]) for x in k if x != p[0]]
+                    alias_matches += [x[0] for x in aliases]
+                    result += aliases
+                    break
+        return alias_matches, result
+
+
+    def get_accurate_version(self, accuracy, version, use_epoch):
         #print('[ ] Getting "%s" version of "%s": ' % (accuracy, version), end='')
         #if accuracy != 'full' and accuracy != 'none':
+        # deal with epoch
+        if use_epoch:
+            version = version.replace(':', '.')
+        else:
+            if ':' in version:
+                version = version.partition(':')[2]
+
         if accuracy == 'none':
             return ''
         if accuracy in ['major', 'minor', 'build']:
-            # some alteration, TODO check
-            if ':' in version:
-                version = version.partition(':')[2]
     
             majorparts = version.partition('.')
             if accuracy in ['major', 'minor', 'build'] and majorparts[0].isdigit():
-                version = majorparts[0]
+                version = majorparts[0].partition('-')[0]
             minorparts = majorparts[2].partition('.')
             if accuracy in ['minor', 'build'] and minorparts[0] != '': 
-                version = '.'.join([majorparts[0], minorparts[0]])
+                version = '.'.join([majorparts[0], minorparts[0].partition('-')[0]])
             buildparts = minorparts[2].partition('.')
             if accuracy == 'build' and buildparts[0] != '': 
                 version = '.'.join([majorparts[0], minorparts[0], buildparts[0].partition('-')[0]])
