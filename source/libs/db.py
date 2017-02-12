@@ -1,6 +1,6 @@
 #from source.libs.include import *
 #from source.libs.define import *
-import time
+import time, re
 import source.libs.define as lib
 import source.libs.log as log
 
@@ -54,7 +54,7 @@ class DB():
     def version(self):
         self.execute('SELECT SQLITE_VERSION()')
         data = self.cursor.fetchone()
-        print("SQLite version: %s" % data)
+        log.info("SQLite version: %s" % data)
     
     def get_tables(self):
         return [x for x in self.get_column(self.execute("SELECT name FROM sqlite_master WHERE type='table'"), 0) if x != 'sqlite_sequence']
@@ -181,10 +181,6 @@ class DBVuln(DB):
     def __init__(self, file):
         super().__init__(file)
     
-    def clean(self):
-        # TODO clean temporary table
-        pass
-
 
     def add_cves(self, cvetuples):
         attribs = ['name', 'severity', 'CVSS_version', 'CVSS_score', 'CVSS_base_score', 'CVSS_impact_subscore', 'CVSS_exploit_subscore', 'CVSS_vector', 'description']
@@ -199,13 +195,29 @@ class DBVuln(DB):
             result = self.execute('INSERT OR REPLACE INTO CVE(name, severity, cvss_version, cvss_score, cvss_base, cvss_impact, cvss_exploit, cvss_vector, description) VALUES(:name, :severity, :CVSS_version, :CVSS_score, :CVSS_base_score, :CVSS_impact_subscore, :CVSS_exploit_subscore, :CVSS_vector, :description)', cvetuple[0], commit=False)
         self.commit() 
         
-
+    def get_sortable_version(self, version):
+        result = []
+        for part in version.split('.'):
+            try:
+                digit = re.search('\d+', part).group()
+                if digit.isdigit():
+                    result.append('%08d%s' % (int(digit), part[len(digit):]))
+                else:
+                    raise TypeError # use whole part
+            except:
+                result.append(part)
+        return '.'.join(result)
+        #sortable = '.'.join(['%8s%s' % (x.partition('-')[0], ''.join(x.partition('-')[1:])) for x in version.split('.')])
+        #sortable = version
+        
 
     def add_apps_for_cves(self, actuples):
         # (cveid, product, vendor, version)
         
         self.execute("BEGIN", commit=False)
         for cve, product, vendor, version, prev in actuples:
+            sortable = self.get_sortable_version(version)
+            #print('version' + version + ' => sortable '  + sortable)
             cveids = self.execute("SELECT cveid FROM CVE WHERE name=:c", {'c': cve}, commit=False)
             if len(cveids) == 0:
                 continue
@@ -215,7 +227,7 @@ class DBVuln(DB):
             self.execute("INSERT OR IGNORE INTO Product(vendorid, name) VALUES(:vid, :p)", {'vid': vendorid, 'p': product}, commit=False, ignoreerrors=True)
             productid = int(self.execute("SELECT productid FROM product WHERE vendorid=:vid AND name=:p", {'vid': vendorid, 'p': product}, commit=False)[0][0])
             #print('pushing versions')
-            self.execute("INSERT OR IGNORE INTO Version(productid, value, prev) VALUES(:pid, :v, :p)", {'pid': productid, 'v': version, 'p': prev}, commit=False, ignoreerrors=True)
+            self.execute("INSERT OR IGNORE INTO Version(productid, value, sortable, prev) VALUES(:pid, :v, :s, :p)", {'pid': productid, 'v': version, 's': sortable, 'p': prev}, commit=False, ignoreerrors=True)
             versionid = int(self.execute("SELECT versionid FROM Version WHERE productid=:pid AND value=:v", {'pid': productid, 'v': version}, commit=False)[0][0])
             #print('pushing relations')
             self.execute('INSERT OR IGNORE INTO CV(cveid, versionid) VALUES(:cid, :vid)', {'cid': cveids[0][0], 'vid': versionid}, commit=False, ignoreerrors=True)
@@ -251,7 +263,8 @@ class DBVuln(DB):
     def add_tmp(self, data):
         self.execute("BEGIN", commit=False)
         for tag, name, vendor, version in data:
-            result = self.execute("INSERT OR IGNORE INTO Temporary(tag, name, vendor, version) VALUES(:t, :n, :vn, :vr)", {'t': tag, 'n': name, 'vn':vendor, 'vr':version}, commit=False);
+            sortable = self.get_sortable_version(version)
+            result = self.execute("INSERT OR IGNORE INTO Temporary(tag, name, vendor, version, sortable) VALUES(:t, :n, :vn, :vr, :s)", {'t': tag, 'n': name, 'vn':vendor, 'vr':version, 's': sortable}, commit=False);
         self.commit()
         if result == DB_ERROR:
             return DB_ERROR
@@ -266,12 +279,32 @@ class DBVuln(DB):
 
 
     def get_cves_for_apps(self, tag, checkversion=True):
-        #result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name AND v.value LIKE version||'%%' AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ('AND tag = :t' if checkversion else ''), {'t': tag})
-        result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name %s AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ("AND (v.value LIKE version||'%%' OR v.value='' OR v.value='-' OR (v.prev=1 AND v.value>version))" if checkversion else ''), {'t': tag})
+        #result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name %s AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ("AND (v.value LIKE version||'%%' OR v.value='' OR v.value='-' OR (v.prev=1 AND v.sortable>sortable))" if checkversion else ''), {'t': tag})
+        result = self.execute("SELECT DISTINCT Ven.name, P.name, V.value, CVE.*, (case CVE.severity when 'High' then 2 when 'Medium' then 1 else 0 end) as sort FROM Vendor Ven INNER JOIN Product P ON Ven.vendorid = P.vendorid INNER JOIN Version V ON P.productid = V.productid INNER JOIN CV ON CV.versionid = V.versionid INNER JOIN CVE ON CVE.cveid = CV.cveid WHERE EXISTS(SELECT * FROM Temporary where name = p.name %s AND tag=:t) ORDER BY sort DESC, CVE.name DESC" % ("AND (version LIKE v.value||'%%' OR v.value='' OR v.value='-' OR (v.prev=1 AND v.sortable>sortable))" if checkversion else ''), {'t': tag})
         if result == DB_ERROR:
             return []
         # return only unique cves, sort by severity and CVE
         return sorted(dict((x[4], x) for x in result).values(), key=lambda x: (x[13], x[4]), reverse=True)
+
+
+    def add_exploits(self, exploits):
+        # add all exploits first
+        self.execute("BEGIN", commit=False)
+        for eid in sorted(exploits.keys()):
+            self.execute("INSERT OR IGNORE INTO Exploit(name) VALUES(:e)", {'e': eid}, commit=False)
+        self.commit()
+        # add ce relationships
+        cepairs = [(k, x) for k,v in exploits.items() for x in v]
+        self.execute("BEGIN", commit=False)
+        for exploit, cve in cepairs:
+            self.execute("INSERT OR IGNORE INTO CE(exploitid, cveid) SELECT e.exploitid, c.cveid FROM Exploit e, CVE c WHERE e.name=:e and c.name=:c", {'e': exploit, 'c': cve}, commit=False)
+        self.commit()
+
+    def get_exploits_for_cve(self, cve):
+        result = self.execute("SELECT e.name FROM Exploit e INNER JOIN CE ce ON e.exploitid=ce.exploitid WHERE ce.cveid IN (SELECT cveid FROM CVE WHERE name=:c)", {'c': cve})
+        if result == DB_ERROR or len(result) == 0:
+            return []
+        return [x[0] for x in result]
 
     def clean(self):
         result = self.execute("DELETE FROM Temporary")
