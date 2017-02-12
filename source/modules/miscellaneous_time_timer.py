@@ -58,9 +58,9 @@ This module just runs for a specified time.
         silent = positive(self.parameters['SILENT'].value) 
         # # # # # # # #
         t = Thread(silent, int(self.parameters['TIMEOUT'].value), self.parameters['MESSAGE'].value)
-        t.start()
         if positive(self.parameters['BACKGROUND'].value):
             return t
+        t.start()
         t.join()
         # # # # # # # #
         return None

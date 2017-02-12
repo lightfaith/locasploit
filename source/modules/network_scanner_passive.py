@@ -96,9 +96,9 @@ This module detects devices by passively listening to the traffic. It needs scap
 
         # # # # # # # #
         t = Thread(silent, int(self.parameters['TIMEOUT'].value), iface)
-        t.start()
         if positive(self.parameters['BACKGROUND'].value):
             return t
+        t.start()
         t.join()
         # # # # # # # #
         return None
