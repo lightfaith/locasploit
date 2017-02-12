@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from source.modules._generic_module import *
 
-# File should be named according to its name (it is not mandatory, but it is good for clarity). It must have a .py extension.
+# File should be named according to its name (it is not mandatory, but it is good for clarity). It must have a .py extension. It cannot be only a digit.
 # It would be cool if you follow naming conventions:
         #   analysis_*    - modules performing complex analysis of something (possibly using other modules)
         #   locasploit_*  - modules operating on locasploit itself (like dict import etc.)

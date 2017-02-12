@@ -57,11 +57,12 @@ class Module(GenericModule):
 
         silent = positive(self.parameters['SILENT'].value)
         # # # # # # # #
-        
+        # Don't put functionality here, 
+        # this will execute immediately even if module is executed as waitfor!
         t = T(silent, int(self.parameters['TIMEOUT'].value))
-        t.start()
         if positive(self.parameters['BACKGROUND'].value):
             return t
+        t.start()
         t.join()
         return None
         # # # # # # # #
