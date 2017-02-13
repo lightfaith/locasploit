@@ -148,12 +148,12 @@ class Scheduler(threading.Thread):
         now = time.time()
         self.lock.acquire()
         # compute column widths
-        maxi = max([len(str(x)) for x in self.jobs] + [2])
-        maxn = max([len(self.jobs[x].name) for x in self.jobs] + [4])
-        times = [log.show_time(now - self.jobs[x].start) for x in self.jobs]
+        maxi = max([len(str(x)) for l in [self.jobs, self.waitjobs] for x in l] + [2])
+        maxn = max([len(l[x].name) for l in [self.jobs, self.waitjobs] for x in l] + [4])
+        times = [log.show_time(now - l[x].start) for l in [self.jobs, self.waitjobs] for x in l]
         waittimes = [log.show_time(0.0) for x in self.waitjobs]
         maxt = max([len(t) for t in times] + [4])
-        maxto = max([len(str(self.jobs[x].timeout)) for x in self.jobs if self.jobs[x].timeout is not None] + [7])
+        maxto = max([len(str(l[x].timeout)) for l in [self.jobs, self.waitjobs] for x in l if l[x].timeout is not None] + [7])
         maxs = max([len(x) for x in ['STATUS', 'running', 'waiting']])
 
         # print header
