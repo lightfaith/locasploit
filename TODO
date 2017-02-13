@@ -19,7 +19,8 @@ TODO:
 				delete session (module?)
             	check/fix silent in modules
 			new core:
-	            SSH with "open" method? (OpenWRT QEMU)
+	            sftp listdir on debian
+				SSH with "open" method? (OpenWRT QEMU)
 			    usable after git clone
 			cves:
 	            cves not updated correctly if hashes are deleted
