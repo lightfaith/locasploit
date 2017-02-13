@@ -242,12 +242,15 @@ def can_read(system, path):
             except: # not a directory
                 try:
                     f = sftp.open(path)
+                    #result = f.readable()
+                    # no readable() on Debian??? # TODO monitor this situation, meanwhile:
+                    tmpbuf = f.read(size=1)
+                    result = True if len(tmpbuf)>0 else False
                 except (PermissionError, FileNotFoundError):
                     return False
                 except Exception as e:
                     #log.err('Exception raised in io.can_read(): %s.' % (str(e)))
                     return False
-                result = f.readable()
             sftp.close()
             return result
         else:
