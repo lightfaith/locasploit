@@ -1,0 +1,3 @@
+# Every line contains package names which should refer to the same thing in CVE XML Vulnerability feeds (available from https://nvd.nist.gov/vuln/data-feeds)
+kernel;linux_kernel
+apache;apache2;apache_webserver;apache_http_server
