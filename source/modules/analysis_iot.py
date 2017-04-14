@@ -75,7 +75,7 @@ Functionality can be divided in 5 steps:
         self.parameters = {
             'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
-            'METHOD': Parameter(mandatory=True, description='\'image\' or \'ssh\''),
+            'METHOD': Parameter(mandatory=True, description='\'local\', \'image\' or \'ssh\''),
             'TARGET': Parameter(mandatory=True, description='File to analyze / SSH connection string'),
             'TMPDIR': Parameter(mandatory=True, description='Absolute path of extraction directory'),
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
@@ -94,7 +94,7 @@ Functionality can be divided in 5 steps:
         target = self.parameters['TARGET'].value
 
         # supported method?
-        if method not in ['image', 'ssh']:
+        if method not in ['local', 'image', 'ssh']:
             log.err('Unsupported method \'%s\'' % (method))
             result = CHECK_FAILURE
 
@@ -105,6 +105,8 @@ Functionality can be divided in 5 steps:
             ibe.parameters['BINFILE'].value = self.parameters['TARGET'].value
             ibe.parameters['TMPDIR'].value = self.parameters['TMPDIR'].value
             result = min(result, ibe.check())
+
+            # target not a directory TODO
 
         if method == 'ssh':
             # existing connection?
@@ -156,6 +158,10 @@ Functionality can be divided in 5 steps:
         tb[tag+'_fake_packages'] = [] # like kernel for Debian systems (version is detected, but it is not a package)
         tb[tag+'_alias_packages'] = [] # kernel is defined as linux_kernel in most CVEs
         
+        aliases_lines = io.read_file('/', './source/support/package_aliases.csv')
+        aliases_lines = [] if aliases_lines == IO_ERROR else aliases_lines.splitlines()
+        package_aliases = [tuple(x.split(';')) for x in aliases_lines if x[0] not in ['#'] and len(x.strip()) > 0]
+
         # 1. Extraction
         if method == 'image':
             log.info('Gathering file stats...')
@@ -163,7 +169,6 @@ Functionality can be divided in 5 steps:
             tb[tag+'_general'].append(('SHA1', io.sha1(activeroot, target)))
             tb[tag+'_general'].append(('SHA256', io.sha256(activeroot, target)))
 
-        
             if extract:
                 log.info('Extracting firmware...')
                 ibe = lib.modules['iot.binwalk.extract']
@@ -171,8 +176,15 @@ Functionality can be divided in 5 steps:
                 ibe.parameters['BINFILE'].value = target
                 ibe.parameters['TMPDIR'].value = tmpdir
                 ibe.run()
-        
-            tmpdir = os.path.join(tmpdir, '_%s.extracted/' % (os.path.basename(target))) # TODO how about rescans?
+            
+            # get extracted dir (last-modified dir with matching name)
+            tmpdirs = [x for x in io.list_dir(activeroot, tmpdir, sortby=IOSORT_MTIME) if x.startswith('_%s' % (os.path.basename(target))) and x.endswith('.extracted')]
+            if len(tmpdirs) > 0:
+                tmpdir = os.path.join(tmpdir, tmpdirs[-1])
+            else:
+                log.err('Cannot access extract folder.')
+
+            #tmpdir = os.path.join(tmpdir, '_%s.extracted/' % (os.path.basename(target))) # TODO how about rescans?
             log.info('', end='')
             log.attachline('========================', log.Color.BLUE)
             if io.can_read(activeroot, tmpdir):
@@ -187,6 +199,9 @@ Functionality can be divided in 5 steps:
             if len(found) > 0 and not silent:
                 log.ok('Found %d linux directory trees.' % len(found))
         
+        if method == 'local':
+            found = [target]
+
         if method == 'ssh':
             found = [target]
         
@@ -269,7 +284,7 @@ Functionality can be divided in 5 steps:
                 # 'kernel' package is present when dealing with opkg or ipkg, so...
                 if p in ['opkg', 'ipkg']:
                     if len(kernels) == 0 and tag+':%d_tmp_packages' % (fscount) in tb:
-                            kernels += [ps[2] for ps in [x for x in tb[tag+':%d_tmp_packages' % (fscount)] if x[0] == 'kernel']]
+                        kernels += [ps[2] for ps in [x for x in tb[tag+':%d_tmp_packages' % (fscount)] if x[0] == 'kernel']]
                 # add kernel as "package" for other package managers
                 else:
                     if len(kernels)>0:
@@ -299,7 +314,7 @@ Functionality can be divided in 5 steps:
 
             log.info('Enumerating packages...')
             if use_aliases:
-                alias_names, alias_packages = self.get_alias_packages(tmp_packages)
+                alias_names, alias_packages = self.get_alias_packages(tmp_packages, package_aliases)
             else:
                 alias_names = []
                 alias_packages = []
@@ -352,18 +367,14 @@ Functionality can be divided in 5 steps:
         log.attachline('------------------------', log.Color.BLUE)
         if len(exploits)>0:
             if not silent:
-                log.ok('%d exploits found.' % (len(set([x for k,v in exploits.items() for x in v]))))
+                log.ok('%d exploits found.' % (len(set([x for _,v in exploits.items() for x in v]))))
             tb[tag+'_exploits'] = exploits
         # # # # # # # #
         return None
     
 
 
-    def get_alias_packages(self, packages):
-        known = [
-            ('kernel', 'linux_kernel'),
-            ('apache', 'apache2', 'apache_webserver', 'apache_http_server'),
-        ]
+    def get_alias_packages(self, packages, known):
         alias_matches = []
         result = []
         for k in known:
