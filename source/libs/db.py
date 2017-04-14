@@ -1,14 +1,14 @@
 #from source.libs.include import *
 #from source.libs.define import *
 import time, re
+import sqlite3 as sqlite
 import source.libs.define as lib
 import source.libs.log as log
 
-import sqlite3 as sqlite
 
 DB_ERROR = lib.DB_ERROR
 
-class DB():
+class DB(object):
     def __init__(self, file):
         self.connection = sqlite.connect(file, check_same_thread=False)
         self.cursor = self.connection.cursor()
@@ -212,7 +212,7 @@ class DBVuln(DB):
         
 
     def add_apps_for_cves(self, actuples):
-        # (cveid, product, vendor, version)
+        # (cveid, product, vendor, version, prev)
         
         self.execute("BEGIN", commit=False)
         for cve, product, vendor, version, prev in actuples:

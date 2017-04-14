@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import sys, threading
 import source.libs.define as lib
 #from source.libs.db import *
-import sys, threading
 
 if sys.platform.startswith('win'):
     from ctypes import windll
@@ -16,7 +16,7 @@ should_newline = True # threads use this to print to newlines
 
 class Color:
     # ANSI CODES (should work for everything except Windows)
-    
+
     PURPLE = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
@@ -151,7 +151,7 @@ def info(string='', end=True, dbnote=False):
         print('%s'.expandtabs(4) % str(string))
     else:
         print('%s'.expandtabs(4) % str(string), end='')
-    if dbnote == True:
+    if dbnote is True:
         lib.db['analysis'].add_note(string, '.', lib.active_session)
     elif dbnote == lib.DBNOTE_UNIQUE:
         lib.db['analysis'].add_note(string, '.', lib.active_session, dbnote=True)
@@ -173,7 +173,7 @@ def ok(string='', end=True, dbnote=False):
         print('%s'.expandtabs(4) % str(string), end='')
     if dbnote == lib.DBNOTE_UNIQUE:
         lib.db['analysis'].add_note(string, '+', unique=True)
-    elif dbnote == True:
+    elif dbnote is True:
         lib.db['analysis'].add_note(string, '+')
     
 #   loglock.release()
@@ -192,7 +192,7 @@ def warn(string='', end=True, dbnote=False):
         print('%s'.expandtabs(4) % str(string))
     else:
         print('%s'.expandtabs(4) % str(string), end='')
-    if dbnote == True:
+    if dbnote is True:
         lib.db['analysis'].add_note(string, '!', lib.active_session)
     elif dbnote == lib.DBNOTE_UNIQUE:
         lib.db['analysis'].add_note(string, '!', lib.active_session, dbnote=True)
@@ -212,7 +212,7 @@ def err(string='', end=True, dbnote=False):
         print('%s'.expandtabs(4) % str(string))
     else:
         print('%s'.expandtabs(4) % str(string), end='')
-    if dbnote == True:
+    if dbnote is True:
         lib.db['analysis'].add_note(string, '-', lib.active_session)
     elif dbnote == lib.DBNOTE_UNIQUE:
         lib.db['analysis'].add_note(string, '-', lib.active_session, dbnote=True)
