@@ -201,11 +201,11 @@ def get_file_info(system, path, verbose=False):
             stm = stats.st_mode
             result['type'] = get_file_type_char(stat.S_IFMT(stm))
             result['permissions'] = '%o' % (stat.S_IMODE(stm))
-            result['UID'] = stat.ST_UID
-            result['GID'] = stat.ST_GID
-            result['ATIME'] = stat.ST_ATIME
-            result['MTIME'] = stat.ST_MTIME
-            result['CTIME'] = stat.ST_CTIME # actually mtime on UNIX, TODO
+            result['UID'] = stats[stat.ST_UID]
+            result['GID'] = stats[stat.ST_GID]
+            result['ATIME'] = stats[stat.ST_ATIME]
+            result['MTIME'] = stats[stat.ST_MTIME]
+            result['CTIME'] = stats[stat.ST_CTIME] # actually mtime on UNIX, TODO
         else:
             if verbose:
                 log.info('File \'%s\' is not accessible.' % (fullpath))
@@ -310,12 +310,13 @@ def get_link(system, path):
     else:
         return path
 
-def list_dir(system, path):
+def list_dir(system, path, sortby=IOSORT_NAME):
+    result = []
     if system.startswith('/'): # local or sub
         try:
-            return os.listdir(get_fullpath(system, path))
+            result = os.listdir(get_fullpath(system, path))
         except:
-            return []
+            result = []
     elif system.startswith('ssh://'):
         c = get_ssh_connection(system)
         try:
@@ -323,10 +324,23 @@ def list_dir(system, path):
             result = sftp.listdir(path)
         except:
             result = []
-        return result
     else:
         # TODO
         return []
+    
+    # sort if necessary
+    if sortby == IOSORT_NAME:
+        return sorted(result)
+    else: # by some parameter
+        fileinfos = {k:get_file_info(system, os.path.join(path, k)) for k in result} # TODO not really platform-independent
+        if sortby == IOSORT_MTIME:
+            return [k for k,v in sorted(fileinfos.items(), key=lambda x: x[1]['MTIME'])]
+        else:
+            return result
+        # TODO more possibilities would be great
+
+
+
 
 def find(system, start, filename, location=False):
     result = []

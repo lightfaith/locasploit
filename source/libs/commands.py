@@ -491,6 +491,10 @@ def execute_command(command):
         lib.command_history.pop()
         pass
     
+    # force exit (no prompt)
+    elif command.lower() == 'force_exit':
+        exit_program(None, None)
+    
     # exit
     elif command.lower() in QUIT_STRINGS:
         log.warn('Do you really want to quit? ', end=False)
