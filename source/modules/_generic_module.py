@@ -10,7 +10,7 @@ import source.libs.io as io
 tb = lib.tb
 
 # DO NOT USE THIS MODULE, JUST INHERIT
-class GenericModule():
+class GenericModule(object):
     def __init__(self):
         pass
 

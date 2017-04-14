@@ -32,6 +32,8 @@ Specifically, the following commands are issued:
     ls /boot | grep vmlinuz-
     uname -r
     cat /proc/version
+
+Sometimes, kernel version can be detected from package manager database - as in analysis.iot module.
 """
         
         self.dependencies = {

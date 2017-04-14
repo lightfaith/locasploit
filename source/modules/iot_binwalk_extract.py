@@ -107,27 +107,4 @@ Extracts components of a .bin file.
         
         return None
     
-"""        
-class Thread(threading.Thread):
-    def __init__(self, silent, timeout):
-        threading.Thread.__init__(self)
-        self.silent = silent
-        self.timeout = timeout
-        self.terminate = False
-            
-    # starts the thread
-    def run(self):
-        if not self.silent:
-            log.info('You have %d seconds.' % (self.timeout))
-        while self.timeout > 0:
-            self.timeout -= 1
-            time.sleep(1)
-        if not self.silent:
-            log.ok('Time\'s up!')
-
-    # terminates the thread
-    def stop(self):
-        self.terminate = True
-"""    
-
 lib.module_objects.append(Module())
