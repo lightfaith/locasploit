@@ -61,7 +61,8 @@ global_parameters['ACTIVEROOT'] = '/'                    # unless changed, all i
 # Miscellaneous constants
 POSITIVE_STRINGS = ['y', 'yes', 'true', 't', '1', '+', True]
 NEGATIVE_STRINGS = ['n', 'no', 'false', 'f', '0', '-', False]
-QUIT_STRINGS = ['exit', 'exit()', 'quit', 'quit()', 'q', 'back']
+QUIT_STRINGS = ['exit', 'exit()', 'quit', 'quit()', 'q', 'force_exit']
+#                                                           ` for correct shell behavior
 
 # module check results
 CHECK_SUCCESS = 2
@@ -78,3 +79,10 @@ DBFILE_NOCONTENT = 3                                    # only file info is adde
 
 USERS_UNIX = 1                                          # user info in [name, password, uid, gid, comment, home, shell] format
 USERS_UNIXLIKE = 2                                      # user info in USERS_UNIX format + admin (not determined from uid)
+
+
+# sorting macros for files (for example io.list_dir)
+IOSORT_NAME = 1
+IOSORT_MTIME = 2
+
+

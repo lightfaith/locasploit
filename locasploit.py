@@ -28,8 +28,8 @@ def main():
     if lib.active_session is None:
         # Cannot get any session ID =>
         # analysis.db is not accessible =>
-        # 'make has not been executed'
-        log.err('Cannot get session ID. Did you run \'make\'?')
+        # 'install script has not been executed'
+        log.err('Cannot get session ID. Did you run correct installation script?')
         exit_program(-1, None)
         
     db['analysis'].create_session(lib.active_session)
@@ -41,7 +41,7 @@ def main():
     if args.input_file is not None:
         if os.access(args.input_file[0], os.R_OK):
             with open(args.input_file[0], 'r') as f:
-                lib.commands = f.read().splitlines()
+                lib.commands = [x if x not in QUIT_STRINGS else 'force_exit' for x in f.read().splitlines()]
                 lib.from_input_file = True
         else:
             log.err('Input file cannot be read!')
