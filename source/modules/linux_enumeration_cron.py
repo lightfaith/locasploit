@@ -51,8 +51,9 @@ class Module(GenericModule):
         silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
         lines = []
+        # TODO add support for specific anacrontab syntax
         # solve files in /etc
-        for etcfile in ['/etc/anacrontab', '/etc/crontab'] + [os.path.join('/etc/cron.d/', x) for x in io.list_dir(activeroot, '/etc/cron.d/')]:
+        for etcfile in ['/etc/crontab'] + [os.path.join('/etc/cron.d/', x) for x in io.list_dir(activeroot, '/etc/cron.d/')]:
             if not io.can_read(activeroot, etcfile):
                 continue
             tmp = io.read_file(activeroot, etcfile)
@@ -62,7 +63,6 @@ class Module(GenericModule):
 #                    lines += tmp.splitlines()
 #                else:
 #                    lines.append(tmp.splitlines())
-        
         # solve user crons
         for user in io.list_dir(activeroot, '/var/spool/cron/crontabs'):
             path = os.path.join('/var/spool/cron/crontabs/', user)
@@ -75,7 +75,7 @@ class Module(GenericModule):
                     lines.append(' '.join(data[:5] + [user] + data[5:]))
 
         # scrap comments, variable definitions and add run-parts files
-        ignore = ('#', 'SHELL=', 'PATH=', 'MAILTO=', 'DEFAULT=', 'NICETIGER=')
+        ignore = ('#', 'SHELL=', 'PATH=', 'MAILTO=', 'DEFAULT=', 'NICETIGER=', 'HOME=', 'LOGNAME=')
         lines = [x for x in lines if len(x.strip())>0 and not x.startswith(ignore)]
         for line in lines:
             if 'run-parts --report ' in line: # another folder
