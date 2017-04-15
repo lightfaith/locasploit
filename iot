@@ -1,6 +1,6 @@
 use analysis.iot
 set TMPDIR /media/root/Entertainment/locasploit_files/extracted
-setg TARGET /media/root/Entertainment/locasploit_files/firmwares/dragino2-yun-common-v2.0.7-rootfs-squashfs.bin
+setg TARGET /media/root/Entertainment/locasploit_files/firmwares/openwrt/openwrt-7.06-x86-squashfs.image
 #set ALIASES no
 set EXTRACT no
 set EXTRACT yes

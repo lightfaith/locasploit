@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+This module determines linux distribution info.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -39,7 +43,15 @@ class Module(GenericModule):
         }
 
     def check(self, silent=None):
-        result = CHECK_NOT_SUPPORTED
+        result = CHECK_SUCCESS
+        if silent is None:
+            silent = positive(self.parameters['SILENT'].value)
+        activeroot = self.parameters['ACTIVEROOT'].value
+        # is it linux?
+        if not get_system_type_from_active_root(activeroot).startswith('lin'):
+            if not silent:
+                log.warn('Target system does not belong to Linux family.')
+            result = CHECK_UNLIKELY
         return result
     
     def run(self):
@@ -72,8 +84,6 @@ class Module(GenericModule):
                     log.ok('  ' + line)
             db['analysis'].add_data_system(x.upper(), activeroot, release)
           
-        # TODO uname -m?
-
         # # # # # # # #
         return None
     

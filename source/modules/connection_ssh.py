@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+This module creates an SSH connection.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -56,7 +60,11 @@ Login with empty password is not possible.
         
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
+        method = self.parameters['METHOD'].value
+        privkey = self.parameters['PRIVATEKEY'].value
+        port = self.parameters['PORT'].value
         result = CHECK_PROBABLY
+        
         # can import paramiko and getpass?
         try:
             import paramiko
@@ -69,13 +77,20 @@ Login with empty password is not possible.
             log.err('Getpass module is not present.')
             result = CHECK_UNLIKELY # may not be needed
         # correct method
-        if self.parameters['METHOD'].value not in ['agent', 'password', 'pubkey']:
+        if method not in ['agent', 'password', 'pubkey']:
             log.err('Wrong METHOD parameter.')
             result = CHECK_FAILURE
-        #TODO more
         # correct port
+        if not (port.isdigit() and int(port)>0 and int(port)<65536):
+            if not silent:
+                log.err('Invalid port value.')
+            result = CHECK_FAILURE
         # existing privatekey if pubkey
-
+        if method == 'pubkey' and not io.can_read('/', privkey):
+            if not silent:
+                log.err('Private key file cannot be read.')
+            result = CHECK_FAILURE
+        
         return result
 
     def run(self):
@@ -136,18 +151,16 @@ Login with empty password is not possible.
                     client = None
         
         if client is not None:
-#            from source.libs.connection import Connection
-            
             c = Connection('ssh://%s@%s:%s/' % (user, host, port), client, 'SSH')
             lib.connections.append(c)
-            log.ok('Connection created: %s' % (c.description))
+            if not silent:
+                log.ok('Connection created: %s' % (c.description))
             # test sftp
             try:
                 sftp = client.open_sftp()
                 sftp.close()
             except:
                 log.err('SFTP connection cannot be established.')
-                
             
             # client.close() is called on connection kill request or program termination
            
@@ -163,9 +176,6 @@ Login with empty password is not possible.
             #while len(data)>0:
             #    print(data)
             #    data = io.read_file(c.description, '/etc/resolv.conf', f=f, chunk=10)
-
-            
-
 
         return None
 

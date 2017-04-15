@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+"""
+CVE entries for specified years are downloaded and stored in the database thanks
+to this file.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -24,7 +29,8 @@ class Module(GenericModule):
         ]
         self.description = """
 This module downloads all CVE entries from the https://nvd.nist.gov/download.cfm for desired years and populates the database.
-This should be run for all years (2002-now) when locasploit is installed. After that, locasploit.update.cve module should be preferred.
+It is not necessary to run this module manually, as the
+locasploit.update.vulnerabilities module is the wrapper for this.
 """
         
         self.dependencies = {
@@ -40,7 +46,6 @@ This should be run for all years (2002-now) when locasploit is installed. After 
             'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
             'YEARS' : Parameter(value='', mandatory=False, description='Years (separate by spaces), empty = all'),
             'CLEAR' : Parameter(value='no', mandatory=True, description='Discard present entries?'),
-            #'TIMEOUT' : Parameter(value='5', mandatory=True, description='Number of seconds to wait'),
 
         }
 
@@ -49,17 +54,16 @@ This should be run for all years (2002-now) when locasploit is installed. After 
             silent = positive(self.parameters['SILENT'].value)
         years = self.parameters['YEARS'].value
         result = CHECK_PROBABLY
+        
         # check parameters
         silent = positive(self.parameters['SILENT'].value)
+        # bad background value?
         if not positive(self.parameters['BACKGROUND'].value) and not negative(self.parameters['BACKGROUND'].value):
             if not silent:
                 log.err('Bad %s value: %s.', 'BACKGROUND', self.parameters['BACKGROUND'].value)
             result = CHECK_FAILURE
-        #if not self.parameters['TIMEOUT'].value.isdigit() or int(self.parameters['TIMEOUT'].value) < 0:
-        #    if not silent:
-        #        log.err('Bad timeout value: %d', int(self.parameters['TIMEOUT'].value))
-        #    result = CHECK_FAILURE
-        if not (years=='' or all([x.isdigit() for x in years.split(' ')])):
+        # bad year 
+        if not (years=='' or years == 'Modified' or all([x.isdigit() for x in years.split(' ')])):
             if not silent:
                 log.err('Invalid YEARS parameter.')
             result = CHECK_FAILURE
@@ -92,21 +96,12 @@ This should be run for all years (2002-now) when locasploit is installed. After 
                 log.err('Cannot import xml.etree.ElementTree.')
             result = CHECK_FAILURE
         
-        try:
-            import hashlib
-        except:
-            if not silent:
-                log.err('Cannot import hashlib.')
-            result = CHECK_FAILURE
-        
-        
         return result
     
     def run(self):
         silent = positive(self.parameters['SILENT'].value) 
         clear = positive(self.parameters['CLEAR'].value)
-        # # # # # # # #
-        #t = Thread(silent, int(self.parameters['TIMEOUT'].value))
+        
         pyears = self.parameters['YEARS'].value
         from datetime import datetime
         years = pyears.split(' ') if pyears != '' else range(2002, datetime.now().year+1)
@@ -115,24 +110,21 @@ This should be run for all years (2002-now) when locasploit is installed. After 
             return t
         t.start()
         t.join()
-        # # # # # # # #
         return None
     
         
 class Thread(threading.Thread):
-    def __init__(self, silent, years, clear): #,timeout):
+    def __init__(self, silent, years, clear):
         threading.Thread.__init__(self)
         self.silent = silent
         self.years = years
         self.clear = clear
-        #self.timeout = timeout
         self.terminate = False
     
     def download_years(self, years):
         from urllib.request import urlretrieve
         from urllib.error import HTTPError
         import gzip
-        import hashlib
         
         years_to_update = {} # year: sha1
         for year in years:
@@ -144,7 +136,7 @@ class Thread(threading.Thread):
                 urlretrieve('https://nvd.nist.gov/download/nvdcve-%s.xml.gz' % (year), localfile+'.gz')
             except HTTPError:
                 log.warn('Cannot get data for %s.' % (year))
-
+            # extract
             try:
                 with gzip.open(localfile+'.gz', 'rb') as fg:
                     io.write_file('/', localfile, fg.read())
@@ -153,17 +145,12 @@ class Thread(threading.Thread):
                     years_to_update[year] = ''
                     continue
 
-                # get hash
-                content = io.read_file('/', localfile, forcebinary=True)
-                #if isinstance(content, str):
-                   #    content = content.encode('utf-8')
-                sha1 = hashlib.sha1(content).hexdigest()
+                # marck for update if hash is different
+                sha1 = io.sha1('/', localfile)
                 if sha1 != lib.db['vuln'] .get_property('%s_sha1' % (year)):
                     years_to_update[year] = sha1
-                    #lib.db['vuln'].add_property('%s_sha1' % (year), sha1)
             except FileNotFoundError:
                 log.warn('GZ extraction failed for year %s' % (year))
-                pass
         return years_to_update
 
 
@@ -183,8 +170,6 @@ class Thread(threading.Thread):
         years_to_update = self.download_years(self.years)
         modified_years_to_update = set()
         
-        #for year in [2003]:
-        #for year in self.years:
         for year in sorted(years_to_update.keys()):
             if self.terminate:
                 break
@@ -199,11 +184,9 @@ class Thread(threading.Thread):
                 continue
             root = tree.getroot()
 
-            #print(root)
             actuples = []
             cvetuples = []
             cves = [x for x in root if 'type' in x.attrib.keys() and x.attrib['type']=='CVE' and not ('reject' in x.attrib.keys() and x.attrib['reject']=='1')]
-            #cves = cves[:10]
             for cve in cves:
                 # should not stop?
                 if self.terminate:
@@ -214,10 +197,8 @@ class Thread(threading.Thread):
                     cveyear = cve.attrib['seq'][:4]
                     modified_years_to_update.add(cveyear if cveyear>'2002' else '2002')
 
-                #print(cveid)
                 description = cve.find('%sdesc' % p).find('%sdescript' % p).text
                 cvetuples.append((cve.attrib, description))
-                #lib.db['vuln'].add_cve(cve.attrib, description)
     
                 vs = cve.find('%svuln_soft' % p)
                 
@@ -226,14 +207,12 @@ class Thread(threading.Thread):
                 else:
                     products = vs.findall('%sprod' % p)
                 for product in products:
-                    #print('   ', product.attrib['vendor'], product.attrib['name'])
                     for version in product.findall('%svers' % p):
                         # prepare for insertion
                         if 'prev' not in version.attrib:
                             version.attrib['prev'] = 0
                         actuples.append((cveid, product.attrib['name'], product.attrib['vendor'], version.attrib['num'], version.attrib['prev']))
             # push into db
-            #print('-------- pushing into DB (%d cves, %d acs)' % (len(cvetuples), len(actuples)))
             lib.db['vuln'].add_cves(cvetuples)
             lib.db['vuln'].add_apps_for_cves(actuples)
         
@@ -241,7 +220,8 @@ class Thread(threading.Thread):
         if self.terminate:
             return
         if 'Modified' in self.years:
-            log.info('Updating checksums for modified years...')
+            if not self.silent:
+                log.info('Updating checksums for modified years...')
             updated_years = self.download_years(modified_years_to_update)
         else:
             updated_years = years_to_update
@@ -249,7 +229,8 @@ class Thread(threading.Thread):
             lib.db['vuln'].add_property('%s_sha1' % (year), sha1)
         
         lib.db['vuln'].add_property('last_update', datetime.now().strftime('%Y-%m-%d'))
-        log.ok('CVEs updated.')
+        if not self.silent:
+            log.ok('CVEs updated.')
         
     # terminates the thread
     def stop(self):

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+Lists content of dpkg database.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -69,9 +73,9 @@ class Module(GenericModule):
         if content == IO_ERROR:
             log.err('Cannot read /var/lib/dpkg/status!')
             return None
-        #info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package:', 'Status:', 'Version'))]
-        #results = [(tag, info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]] # TODO fix this like in opkg
+        # grep correct lines
         info = list(zip(*[iter([x for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))])]*3))
+        # add appropriate lines into TB
         for entry in info:
             try:
                 pkg = [x.partition(' ')[2] for x in entry if x.startswith('Package')][0]
@@ -79,16 +83,11 @@ class Module(GenericModule):
                 status = [x.partition(' ')[2] for x in entry if x.startswith('Status')][0]
             except: # weird order, skip
                 continue
-            if 'installed' in status:
+            if 'installed' in status: # that's why dpkg -l | wc differs
                 results.append((pkg, None, version))
 
-        #tb[tag] = [(x[1], x[2], x[3]) for x in results]
         tb[tag] = results
         
-        #db['vuln'].add_tmp(results)
-        #if not silent:
-        #    for result in results:
-        #        log.info(result)
         if not silent:
             log.ok('%d packages revealed.' % (len(results)))
         return None

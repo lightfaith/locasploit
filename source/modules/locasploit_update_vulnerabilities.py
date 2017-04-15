@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+This module ensures the local CVE and Exploit database is up to date.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -33,6 +37,9 @@ This should be run frequently, as the list of modified CVE entries is being held
 """
         
         self.dependencies = {
+            'locasploit.update.cve': '1.0',
+            'locasploit.update.exploit': '1.0',
+            'locasploit.cleanup': '1.0',
         }
         self.changelog = """
 """
@@ -43,7 +50,6 @@ This should be run frequently, as the list of modified CVE entries is being held
         self.parameters = {
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
-            #'TIMEOUT' : Parameter(value='5', mandatory=True, description='Number of seconds to wait'),
         }
 
     def check(self, silent=None):
@@ -56,78 +62,68 @@ This should be run frequently, as the list of modified CVE entries is being held
             if not silent:
                 log.err('Bad %s value: %s.', 'BACKGROUND', self.parameters['BACKGROUND'].value)
             result = CHECK_FAILURE
-        #if not self.parameters['TIMEOUT'].value.isdigit() or int(self.parameters['TIMEOUT'].value) < 0:
-        #    if not silent:
-        #        log.err('Bad timeout value: %d', int(self.parameters['TIMEOUT'].value))
-        #    result = CHECK_FAILURE
-        # can import urlib?
-        try:
-            from urllib.request import urlretrieve
-        except:
-            if not silent:
-                log.err('Cannot import urllib.request library (urllib5).')
-            # TODO other ways?
-            result = CHECK_FAILURE
-
+        
         return result
     
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
         background = positive(self.parameters['BACKGROUND'].value)
-        # # # # # # # #
-        #t = Thread(silent, int(self.parameters['TIMEOUT'].value))
         t = Thread(silent, background)
-        if positive(self.parameters['BACKGROUND'].value):
+        if background:
             return t
         t.start()
         t.join()
-        # # # # # # # #
         return None
     
         
 class Thread(threading.Thread):
-    def __init__(self, silent, background): #,timeout):
+    def __init__(self, silent, background):
         threading.Thread.__init__(self)
         self.silent = silent
-        #self.timeout = timeout
         self.terminate = False
         self.background = background
             
     # starts the thread
     def run(self):
         from datetime import datetime
-        # TODO check self.terminate somewhere!
         if self.terminate:
             return
-        from urllib.request import urlretrieve
         last = lib.db['vuln'].get_property('last_update')
-        log.info('Last update: %s' % ('never' if last == -1 else last))
-
+        if not self.silent:
+            log.info('Last update: %s' % ('never' if last == -1 else last))
+        
+        # update CVEs
         m = lib.modules['locasploit.update.cve']
         m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no' 
         last_update = lib.db['vuln'].get_property('last_update')
         if last_update != DB_ERROR and (datetime.now() - datetime.strptime(last_update, '%Y-%m-%d')).days < 8:
-            log.info('Entries have been updated less than 8 days ago, checking Modified feed only...')
+            if not self.silent:
+                log.info('Entries have been updated less than 8 days ago, checking Modified feed only...')
             m.parameters['YEARS'].value = 'Modified'
         else:
-            log.info('Entries have been updated more than 8 days ago, checking all feeds for change...')
+            if not self.silent:
+                log.info('Entries have been updated more than 8 days ago, checking all feeds for change...')
             m.parameters['YEARS'].value = ' '.join(map(str, range(2002, datetime.now().year+1)))
-        log.info('Will update following years: '+ m.parameters['YEARS'].value)
+        if not self.silent:
+            log.info('Will update following years: '+ m.parameters['YEARS'].value)
+        m.parameters['SILENT'].value = self.silent
         job = m.run()
         # get job id so we can wait for it
         lucid = None if job is None else [lib.scheduler.add(m.name, time.time(), job)]
+        
+        # update exploits
         m = lib.modules['locasploit.update.exploit']
-        m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no' 
+        m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no'
+        m.parameters['SILENT'].value = self.silent
         job = m.run()
         lue = None if job is None else [lib.scheduler.add(m.name, time.time(), job, timeout=None, waitfor=lucid)]
+
         # cleanup
         m = lib.modules['locasploit.cleanup']
         m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no' 
+        m.parameters['SILENT'].value = self.silent
         job = m.run()
         lib.scheduler.add(m.name, time.time(), job, timeout=None, waitfor=lucid+lue)
-
-
-
 
 
     # terminates the thread

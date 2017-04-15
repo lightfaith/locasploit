@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+List of local users is retrieved from /etc/passwd.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -54,21 +58,11 @@ class Module(GenericModule):
             if not silent:
                 log.err('Cannot open /etc/passwd file.')
             result = CHECK_FAILURE
-        # can open /etc/group?
-        #if not io.can_read(activeroot, '/etc/group'):
-        #    if not silent:
-        #        log.err('Cannot open /etc/group file.')
-        #    result = CHECK_FAILURE
         return result
 
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
-        
-        ip = get_address_from_active_root(activeroot)
-        if ip is None:
-            log.err('Cannot get proper address for active root.')
-            return None
         
         users = io.read_file(activeroot, '/etc/passwd')
         if users == IO_ERROR:

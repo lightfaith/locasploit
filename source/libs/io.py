@@ -1,9 +1,14 @@
+#!/usr/bin/env python3
+"""
+Universal file/directory methods are defined here.
+"""
+
+import stat, hashlib
 from source.libs.define import *
 #import source.libs.define as lib
 import source.libs.log as log
 from source.libs.db import *
 
-import stat, hashlib
 
 def get_fullpath(system, path):
     #print(system, path)
@@ -20,7 +25,7 @@ def get_fullpath(system, path):
     elif system.startswith('ssh://'):
         return system+('/' if not system.endswith('/') else '')+path
     else: 
-        # NOT IMPLEMENTED
+        # TODO NOT IMPLEMENTED
         return IO_ERROR
 
 def get_fd(system, path, mode):
@@ -33,9 +38,9 @@ def get_fd(system, path, mode):
         c.connectors.append(sftp)
         return sftp.open(path, mode)
     else:
+        # TODO NOT IMPLEMENTED
         return None
 
-#def read_file(system, path, dbfile=True, utf8=False):
 def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0, verbose=False):
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
@@ -99,7 +104,7 @@ def read_file(system, path, f=None, usedb=False, forcebinary=False, chunk=0, ver
             return IO_ERROR
         # TODO usedb, chunk etc.
     else: # FTP/TFTP/HTTP
-        # NOT IMPLEMENTED
+        # TODO NOT IMPLEMENTED
         return IO_ERROR
 
 def write_file(system, path, content, lf=True, utf8=False):
@@ -133,23 +138,9 @@ def write_file(system, path, content, lf=True, utf8=False):
             # str, not bytes? write as binary
             with open(fullpath, 'wb') as f:
                 f.write(content)
-        """if utf8:
-            with codecs.open(fullpath, 'w', 'utf-8') as f:
-                f.write(content)
-        else:
-            try:
-                if lf: # ending = \n
-                    with open(fullpath, 'w', newline='') as f:
-                        f.write(content)
-                else: # respect OS newline style
-                    with open(fullpath, 'w') as f:
-                        f.write(content)
-            except UnicodeEncodeError:
-                write_file(system, path, content, lf, utf8=True)
-        """
         return True
     else: # SSH/FTP/TFTP/HTTP
-        # NOT IMPLEMENTED
+        # TODO NOT IMPLEMENTED
         return IO_ERROR
 
 
@@ -163,7 +154,9 @@ def mkdir(system, path):
     
     if system.startswith('/'): # local or sub
         os.mkdir(fullpath)
-    #TODO
+    else:
+        #TODO NOT IMPLEMENTED
+        pass
 
 def delete(system, path):
     typ = get_file_info(system, path)['type']
@@ -181,12 +174,6 @@ def delete(system, path):
                 import shutil
                 shutil.rmtree(fullpath)
 
-#def get_basename(system, path):
-#    fullpath = get_fullpath(system, path)
-#    if system.startswith('/'): # local or sub
-#        return os.path.basename(path)
-#    return IO_ERROR # bad
-# NOT NECESSARY, os.path.basename(path) should be sufficient
 
 def get_file_info(system, path, verbose=False):
     fullpath = get_fullpath(system, path)
@@ -219,12 +206,11 @@ def get_file_info(system, path, verbose=False):
         return result
 
     else: # SSH/FTP/TFTP/HTTP
-        # NOT IMPLEMENTED
+        # TODO NOT IMPLEMENTED
         return IO_ERROR
 
 def can_read(system, path):
     fullpath = get_fullpath(system, path)
-    #print(fullpath)
     if fullpath == IO_ERROR:
         return False
     if system.startswith('/'):
@@ -249,7 +235,6 @@ def can_read(system, path):
                 except (PermissionError, FileNotFoundError):
                     return False
                 except Exception as e:
-                    #log.err('Exception raised in io.can_read(): %s.' % (str(e)))
                     return False
             sftp.close()
             return result
@@ -260,21 +245,25 @@ def can_read(system, path):
 
 def can_write(system, path):
     fullpath = get_fullpath(system, path)
-    #print(fullpath)
     if fullpath == IO_ERROR:
         return False
-    if os.access(fullpath, os.W_OK):
-        return True
-    else:
-        return False
+    if system.startswith('/'):
+        if os.access(fullpath, os.W_OK):
+            return True
+        else:
+            return False
 
 def can_execute(system, path):
     fullpath = get_fullpath(system, path)
     if fullpath == IO_ERROR:
         return False
-    if os.access(fullpath, os.X_OK):
+    if system.startswith('/'):
+        if os.access(fullpath, os.X_OK):
             return True
+        else:
+            return False
     else:
+        # TODO NOT IMPLEMENTED
         return False
 
 def can_create(system, path):
@@ -297,7 +286,7 @@ def is_link(system, path):
     #os = get_system_type_from_active_root(system)
     if system.startswith('/'):
         return os.path.islink(get_fullpath(system, path))
-    #TODO
+    #TODO NOT IMPLEMENTED
     return False
 
 def get_link(system, path):
@@ -325,7 +314,7 @@ def list_dir(system, path, sortby=IOSORT_NAME):
         except:
             result = []
     else:
-        # TODO
+        # TODO NOT IMPLEMENTED
         return []
     
     # sort if necessary
@@ -352,7 +341,7 @@ def find(system, start, filename, location=False):
                 else:
                     result.append(get_fullpath(system, os.path.join(root, filename)))
     else:
-        #TODO
+        #TODO NOT IMPLEMENTED
         result = []
     return result
 
@@ -364,10 +353,11 @@ def hash(system, path, function, hexdigest=True):
     if f == IO_ERROR:
         result = 'UNKNOWN'
     else:
-        buf = read_file(system, path, f=f, chunk=65535)
-        while(len(buf)>0):
-            hasher.update(buf)
+        while True:
             buf = read_file(system, path, f=f, chunk=65535)
+            if len(buf) <= 0:
+                break
+            hasher.update(buf)
             result = hasher.hexdigest() if hexdigest else hasher.digest()
         f.close()
     return result
@@ -406,7 +396,9 @@ def get_system_type_from_active_root(activeroot, verbose=False, dontprint=''):
     #
     # check db if the system is known
     #
-    
+
+    # TODO 
+
     #
     # new system - detect it and write into db
     #

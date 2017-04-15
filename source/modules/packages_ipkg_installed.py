@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+Lists content of ipkg database.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -52,6 +56,7 @@ class Module(GenericModule):
             if not silent:
                 log.warn('Target system does not belong to Linux family.')
             result = CHECK_UNLIKELY
+        # can read database file?
         if not io.can_read(activeroot, '/usr/lib/ipkg/status'):
             if not silent:
                 log.err('Cannot open /usr/lib/ipkg/status file.')
@@ -64,42 +69,27 @@ class Module(GenericModule):
         tag = self.parameters['TAG'].value
         
         results = []
-        # TODO also /var/lib/ipkg/info/? but this is bad, use from opkg 
-        """
-        path = '/usr/lib/opkg/info'
-        # get control files
-        from os import listdir
-        cfiles = [x for x in io.list_dir(activeroot, path) if x.endswith('.control')]
-        
-        # read .control files
-        for cfile in cfiles:
-            path = os.path.join('/usr/lib/opkg/info', cfile)
-            content = io.read_file(activeroot, path)
-            if content == IO_ERROR:
-                log.err('Cannot read %s' % (path))
-                continue
-            # get info
-            pkgdata = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Version'))]
-            product = pkgdata[0]
-            # get version
-            version = pkgdata[1]
-            results.append((product, None, version))
-        """
         # read status file
         content = io.read_file(activeroot, '/usr/lib/ipkg/status')
         if content == IO_ERROR:
             if len(results) == 0:
                 log.err('Cannot read /usr/lib/ipkg/status')
-        else:
-            info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))]
-            results += [(info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
+                return None
+        # grep correct lines
+        info = list(zip(*[iter([x for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))])]*3))
+        # add appropriate lines into TB
+        for entry in info:
+            try:
+                pkg = [x.partition(' ')[2] for x in entry if x.startswith('Package')][0]
+                version = [x.partition(' ')[2] for x in entry if x.startswith('Version')][0]
+                status = [x.partition(' ')[2] for x in entry if x.startswith('Status')][0]
+            except: # weird order, skip
+                continue
+            if 'installed' in status:
+                results.append((pkg, None, version))
 
         # insert into TB
         tb[tag] = results
-        #db['vuln'].add_tmp(results)
-        #if not silent and len(results)<100:
-        #    for result in results:
-        #        log.info(result)
         if not silent:
             log.ok('%d packages revealed.' % (len(results)))
         return None

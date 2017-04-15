@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+"""
+This module removes unnecessary files, like CVE XMLs and dictionary text files.
+"""
+
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -54,14 +59,11 @@ This module removes useless files from locasploit folder, namely:
     
     def run(self):
         silent = positive(self.parameters['SILENT'].value) 
-        # # # # # # # #
-        #t = Thread(silent, int(self.parameters['TIMEOUT'].value))
         t = Thread(silent)
         if positive(self.parameters['BACKGROUND'].value):
             return t
         t.start()
         t.join()
-        # # # # # # # #
         return None
     
         

@@ -1,0 +1,19 @@
+use analysis.iot
+set TMPDIR /
+setg TARGET /
+#set ALIASES no
+set EXTRACT no
+set EXTRACT yes
+set METHOD local
+set TAG test
+set ACCURACY build
+#set EPOCH no
+set EPOCH yes
+run
+#back
+use report.iot
+set TAG test
+set OUTPUTFILE /tmp/report.pdf
+run
+back
+

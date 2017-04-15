@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+Lists content of opkg database.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -64,8 +68,8 @@ class Module(GenericModule):
         activeroot = self.parameters['ACTIVEROOT'].value
         tag = self.parameters['TAG'].value
         path = '/usr/lib/opkg/info'
+        
         # get control files
-        #from os import listdir
         cfiles = [x for x in io.list_dir(activeroot, path) if x.endswith('.control')]
         results = []
         
@@ -87,11 +91,11 @@ class Module(GenericModule):
         content = io.read_file(activeroot, '/usr/lib/opkg/status')
         if content == IO_ERROR:
             if len(results) == 0:
-                log.err('Cannot read /usr/lib/opkg/status')
+                log.err('Cannot read /usr/lib/opkg/status.')
         else:
-            #info = [x.partition(' ')[2] for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))]
-            #results += [(info[i], None, info[i+2]) for i in range(0, len(info)-2, 3) if 'installed' in info[i+1]]
+            # grep correct lines
             info = list(zip(*[iter([x for x in content.splitlines() if x.startswith(('Package', 'Status', 'Version'))])]*3))
+            # add appropriate lines into TB
             for entry in info:
                 try:
                     pkg = [x.partition(' ')[2] for x in entry if x.startswith('Package')][0]
@@ -104,10 +108,6 @@ class Module(GenericModule):
 
         # insert into TB
         tb[tag] = results
-        #db['vuln'].add_tmp(results)
-        #if not silent and len(results)<100:
-        #    for result in results:
-        #        log.info(result)
         if not silent:
             log.ok('%d packages revealed.' % (len(results)))
         return None

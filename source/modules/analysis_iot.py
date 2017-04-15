@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+This module performs full analysis on a binary file or a running system.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -15,7 +19,7 @@ class Module(GenericModule):
         
         self.date = '2016-11-06'
         self.license = 'GNU GPLv2'
-        self.version = '1.1'
+        self.version = '1.2'
         self.tags = [
             'IoT',
             'Internet of Things',
@@ -24,19 +28,33 @@ class Module(GenericModule):
         ]
         self.description = """This module takes advantage of other modules to scan systems for known vulnerabilities.
 Requirements:
-    - linux-based extractable image or system running SSH server
-    - package manager (such as dpkg, opkg, ...) present
+    - linux-based extractable image, system running SSH/SFTP server or local filesystem
+    - package manager (dpkg, opkg, ipkg) present
 
 Functionality can be divided in 5 steps:
 
-    1. Extraction
-        'iot.binwalk.extract' module is used for this purpose. User supplies image's path and a folder for extraction. Folder path must be absolute, as it will be used as root. Extraction can be skipped by setting the EXTRACT parameter to NO - this is useful if same image is analyzed repeatedly. This phase is skipped when scanning running system.
+    1. Extraction ('image' method only)
+        'iot.binwalk.extract' module is used for this purpose. User supplies image's path and a folder for extraction. Folder path must be absolute, as it will be used as root. Extraction can be skipped by setting the EXTRACT parameter to NO - this is useful if same image is analyzed repeatedly.
 
-    2. Root location
-        Program guesses the root of the directory tree by searching for etc/passwd file. This phase is skipped when scanning running system.
+    2. Root location ('image' method only)
+        Program guesses the root of the directory tree by searching for /etc/ folder.
 
-    3. Package enumeration
-        'package.*.install' modules will be used for this purpose. Results are stored in <TAG>_packages. Accuracy of package versions can be altered by the ACCURACY parameter.
+    3. System info gathering
+        Following modules storing results in TB are executed for each detected root:
+            linux.enumeration.distribution
+            linux.enumeration.kernel
+            linux.enumeration.users
+            linux.enumeration.cron
+
+        If kernel version is not detected in this phase and the 'kernel' package is present, version of the package is used (in Package enumeration phase).
+
+    4. Package enumeration
+        Following modules for dumping package lists and appropriate versions are checked and possibly executed:
+            package.dpkg.installed
+            package.opkg.installed
+            package.ipkg.installed
+
+        Results are stored in <TAG>_packages. Epoch relevancy can be toggled with EPOCH parameter. Accuracy of package versions can be altered by ACCURACY parameter:
 
         Let's say detected version is '0.9.8j-r13.0.4'. Then following values for ACCURACY will match different entries:
             none  - version is completely ignored, matching will be only based on package names
@@ -47,8 +65,11 @@ Functionality can be divided in 5 steps:
 
         For non-standard versioning, full accuracy will be used (unless 'none' ACCURACY is chosen).
 
-    4. CVE detection
-        CVEs which match packages will be listed and saved into Temporary Base as <TAG>_cves.
+    5. CVE detection
+        CVEs which match packages will be listed and saved into Temporary Base. Known-similar-package-related CVEs can be also included by setting ALIASES parameter.
+    
+    6. Exploit detection
+        Exploits relevant for detected CVEs are saved into Temporary Base as <TAG>_exploits.
 
     At this point, all data are ready to be processed by report.iot and report.iot.diff modules.
 """
@@ -58,9 +79,14 @@ Functionality can be divided in 5 steps:
             'packages.dpkg.installed': '1.0',
             'packages.opkg.installed': '1.0',
             'packages.ipkg.installed': '1.0',
-            'connection.ssh': '1.0',
+            'linux.enumeration.distribution': '1.0',
+            'linux.enumeration.kernel': '1.0',
+            'linux.enumeration.users': '1.0',
+            'linux.enumeration.cron': '1.0',
         }
         self.changelog = """
+1.2: Local support
+     ipkg manager supported
 1.1: SSH support
 1.0: for linux-based firmware only
      dpkg and opkg managers supported
@@ -77,7 +103,7 @@ Functionality can be divided in 5 steps:
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
             'METHOD': Parameter(mandatory=True, description='\'local\', \'image\' or \'ssh\''),
             'TARGET': Parameter(mandatory=True, description='File to analyze / SSH connection string'),
-            'TMPDIR': Parameter(mandatory=True, description='Absolute path of extraction directory'),
+            'TMPDIR': Parameter(mandatory=False, description='Absolute path of extraction directory'),
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
             'TAG': Parameter(mandatory=True, description='Package info tag'),
             'EXTRACT': Parameter(value='yes', mandatory=True, description='Extraction will happen'),
@@ -92,10 +118,13 @@ Functionality can be divided in 5 steps:
             silent = positive(self.parameters['SILENT'].value)
         method = self.parameters['METHOD'].value
         target = self.parameters['TARGET'].value
+        activeroot = self.parameters['ACTIVEROOT'].value
+        accuracy = self.parameters['ACCURACY'].value
 
         # supported method?
         if method not in ['local', 'image', 'ssh']:
-            log.err('Unsupported method \'%s\'' % (method))
+            if not silent:
+                log.err('Unsupported method \'%s\'' % (method))
             result = CHECK_FAILURE
 
         if method == 'image':
@@ -106,25 +135,26 @@ Functionality can be divided in 5 steps:
             ibe.parameters['TMPDIR'].value = self.parameters['TMPDIR'].value
             result = min(result, ibe.check())
 
-            # target not a directory TODO
-
-        if method == 'ssh':
+        elif method == 'ssh':
             # existing connection?
             c = io.get_ssh_connection(target)
             if c is None:
-                log.err('Non-existent SSH connection \'%s\'' % (target))
+                if not silent:
+                    log.err('Non-existent SSH connection \'%s\'' % (target))
                 result = CHECK_FAILURE
-        #ri = lib.modules['report.iot']
-        #ri.parameters['TAG'].value = self.parameters['TAG'].value
-        #ri.parameters['OUTPUTFILE'].value = self.parameters['OUTPUTFILE'].value
-        #result = min(result, ri.check())
 
-        #for p in self.packathors:
-        #    m = lib.modules['packages.%s.installed' % (p)]
-        #    m.parameters['ACCURACY'].value = self.parameters['ACCURACY'].value
-        #    m.parameters['TAG'].value = self.parameters['TAG'].value
-        #    result = min(result, m.check())
-        # TODO !!!!!! REVALIDATE !!!!
+        elif method == 'local':
+            # target is a directory?
+            if io.get_file_info(activeroot, target)['type'] != 'd':
+                if not silent:
+                    log.err('Only folders can be analyzed with the \'local\' method.')
+                result = CHECK_FAILURE
+
+        # supported accuracy?
+        if accuracy not in ['none', 'major', 'minor', 'build', 'full']:
+            if not silent:
+                log.err('Unsupported ACCURACY \'%s\'' % (accuracy))
+            result = CHECK_FAILURE
         return result
     
     def run(self):
@@ -138,9 +168,6 @@ Functionality can be divided in 5 steps:
         extract = positive(self.parameters['EXTRACT'].value)
         use_epoch = positive(self.parameters['EPOCH'].value)
         use_aliases = positive(self.parameters['ALIASES'].value)
-        #outputfile = self.parameters['OUTPUTFILE'].value
-        # # # # # # # #
-        import time, hashlib
 
         # 0. Preparation
         tb[tag+'_accuracy'] = accuracy
@@ -164,13 +191,15 @@ Functionality can be divided in 5 steps:
 
         # 1. Extraction
         if method == 'image':
-            log.info('Gathering file stats...')
+            if not silent:
+                log.info('Gathering file stats...')
             tb[tag+'_general'].append(('MD5', io.md5(activeroot, target)))
             tb[tag+'_general'].append(('SHA1', io.sha1(activeroot, target)))
             tb[tag+'_general'].append(('SHA256', io.sha256(activeroot, target)))
 
             if extract:
-                log.info('Extracting firmware...')
+                if not silent:
+                    log.info('Extracting firmware...')
                 ibe = lib.modules['iot.binwalk.extract']
                 ibe.parameters['ACTIVEROOT'].value = activeroot
                 ibe.parameters['BINFILE'].value = target
@@ -184,17 +213,17 @@ Functionality can be divided in 5 steps:
             else:
                 log.err('Cannot access extract folder.')
 
-            #tmpdir = os.path.join(tmpdir, '_%s.extracted/' % (os.path.basename(target))) # TODO how about rescans?
-            log.info('', end='')
-            log.attachline('========================', log.Color.BLUE)
+            if not silent:
+                log.info('', end='')
+                log.attachline('========================', log.Color.BLUE)
             if io.can_read(activeroot, tmpdir):
-                log.info('Analyzing data in \'%s\'...' % (tmpdir))
+                if not silent:
+                    log.info('Analyzing data in \'%s\'...' % (tmpdir))
             else:
                 log.err('Cannot access %s' % (tmpdir))
 
             # 2. Root location
             log.info('Looking for directory trees..')
-            #found = [x[:-len('/etc/passwd')] for x in io.find(activeroot, tmpdir, 'passwd') if x.endswith('/etc/passwd')]
             found = [x[:-len('/etc')] for x in io.find(activeroot, tmpdir, 'etc') if io.get_system_type_from_active_root(x[:-len('/etc')], verbose=True, dontprint=tmpdir) == 'linux'] 
             if len(found) > 0 and not silent:
                 log.ok('Found %d linux directory trees.' % len(found))
@@ -208,11 +237,13 @@ Functionality can be divided in 5 steps:
         tb[tag+'_general'].append(('Aliases enabled', 'YES' if use_aliases else 'NO'))
 
         fscount = -1
+        # for each found filesystem
         for f in found:
             fscount+=1
-            log.info('', end='')
-            log.attachline('------------------------', log.Color.BLUE)
-            log.info('Analyzing %s:' % (f))
+            if not silent:
+                log.info('', end='')
+                log.attachline('------------------------', log.Color.BLUE)
+                log.info('Analyzing %s:' % (f))
             data = {} # FS-specific, to be stored in TB
 
             oses = []
@@ -229,11 +260,16 @@ Functionality can be divided in 5 steps:
                 data['name'] = f[len(target):]
                 if not data['name'].startswith('/'):
                     data['name'] = '/'+data['name']
+            elif method == 'local':
+                data['name'] = f[len(target):]
+                if not data['name'].startswith('/'):
+                    data['name'] = '/'+data['name']
             else: # in case of new method
                 data['name'] = 'UNDEFINED DUE TO WEIRD METHOD'
                 
-            # System info enumeration
-            log.info('Dumping system info...')
+            # 3. SYSTEM INFO GATHERING
+            if not silent:
+                log.info('Dumping system info...')
             data['system'] = []
 
             led = lib.modules['linux.enumeration.distribution']
@@ -262,23 +298,34 @@ Functionality can be divided in 5 steps:
             users += [x[2] for x in db['analysis'].get_users(f) if x[0] >= 1000]
             pusers += [(x[2] if x[2] == x[2].strip() else '%s' % (x[2])) for x in db['analysis'].get_users(f) if x[0] == 0]
 
+            if not silent:
+                log.info('Getting cron data...')
+            lec = lib.modules['linux.enumeration.cron']
+            lec.parameters['ACTIVEROOT'].value = f
+            lec.run()
+            crons += db['analysis'].get_cron(f)
+        
+            data['cron'] = crons
+
             
-            # 3. Package enumeration
+            # 4. Package enumeration
             tb[tag+':%d_tmp_packages' % (fscount)] = [] # array for detected packages
             tmp_packages = [] # cause multiple package managers overwrite tmp data in tb
-            log.info('Enumerating package managers...')
+            if not silent:
+                log.info('Enumerating package managers...')
             for p in self.packathors:
-                m = lib.modules['packages.%s.installed' % (p)]
-                m.parameters['ACTIVEROOT'].value = f
-                m.parameters['TAG'].value = tag+':%d_tmp_packages' % (fscount)
-                m.parameters['SILENT'].value = 'yes'
-                if m.check() == CHECK_FAILURE:
+                pxi = lib.modules['packages.%s.installed' % (p)]
+                pxi.parameters['ACTIVEROOT'].value = f
+                pxi.parameters['TAG'].value = tag+':%d_tmp_packages' % (fscount)
+                pxi.parameters['SILENT'].value = 'yes'
+                if pxi.check() == CHECK_FAILURE:
                     continue
-                m.run()
+                pxi.run()
                 if len(tb[tag+':%d_tmp_packages' % (fscount)]) == 0:
                     continue
                 pms.append(p)
-                log.ok('Detected \'%s\' package manager' % (p))
+                if not silent:
+                    log.ok('Detected \'%s\' package manager' % (p))
                 tmp_packages += tb[tag+':%d_tmp_packages' % (fscount)]
                 # add also known aliases for packages (e.g. kernel = linux_kernel)
                 # 'kernel' package is present when dealing with opkg or ipkg, so...
@@ -293,26 +340,18 @@ Functionality can be divided in 5 steps:
        
             if len(kernels) == 0:
                 kernels.append('UNKNOWN')
-            # push gathered data into TB
             
+            # prepare data gathered so far (it's here because pms and kernel changed)
             data['os'] = oses
             data['system'].append(('Kernel', set(kernels)))
             if len(users)>0:
                 data['system'].append(('Users', users))
             if len(pusers)>0:
                 data['system'].append(('Privileged users', pusers))
-            #data['system'].append(('Startup scripts', startups))
             data['system'].append(('Package managers', pms))
             
-            log.info('Getting cron data...')
-            lec = lib.modules['linux.enumeration.cron']
-            lec.parameters['ACTIVEROOT'].value = f
-            lec.run()
-            crons += db['analysis'].get_cron(f)
-        
-            data['cron'] = crons
-
-            log.info('Enumerating packages...')
+            if not silent:
+                log.info('Enumerating packages...')
             if use_aliases:
                 alias_names, alias_packages = self.get_alias_packages(tmp_packages, package_aliases)
             else:
@@ -330,21 +369,17 @@ Functionality can be divided in 5 steps:
                 if not silent:
                     log.ok('Found %d packages.' % (db['vuln'].count_tmp(tag+':%d' % (fscount))))
         
-            # 4. CVE detection
-            log.info('Detecting CVEs...')
+            # 5. CVE detection
+            if not silent:
+                log.info('Detecting CVEs...')
             
             cves = db['vuln'].get_cves_for_apps(tag+':%d' % (fscount), accuracy!='none')
             # accuratize the returned version for report
             cves = [list(x[:2]) + [self.get_accurate_version(accuracy, x[2], use_epoch)] + list(x[3:]) for x in cves]
-            #print(cves)
-            #print()
-            #print(tb[tag+'_packages'])
-            # create dictionary of vulnerable packages (cause we want original version to be shown, too)
+            
+            # create dictionary of vulnerable packages (because we want original version to be shown, too)
             vulnerable = {k:v for k in [(x[0], x[1]) for x in cves] for v in [x[2] for x in data['packages'] if x[0] == k[1] and (x[1] == k[0] or x[1] is None)]}
-            #print()
-            #print(vulnerable)
             cves = [list(x)+[vulnerable[(x[0], x[1])]] for x in cves]
-            #print(cves)
             data['cves'] = cves
             if not silent:
                 if len(cves)>0:
@@ -352,8 +387,9 @@ Functionality can be divided in 5 steps:
                 else:
                     log.info('No CVEs found.')
 
-            # 5. Exploit detection
-            log.info('Detecting exploits...')
+            # 6. Exploit detection
+            if not silent:
+                log.info('Detecting exploits...')
             for cve in set([x[4] for x in cves]):
                 exlist = db['vuln'].get_exploits_for_cve(cve)
                 if len(exlist)>0:
@@ -364,12 +400,12 @@ Functionality can be divided in 5 steps:
                 continue
             tb[tag+'_filesystems'].append(data)
 
-        log.attachline('------------------------', log.Color.BLUE)
+        if not silent:
+            log.attachline('------------------------', log.Color.BLUE)
         if len(exploits)>0:
             if not silent:
                 log.ok('%d exploits found.' % (len(set([x for _,v in exploits.items() for x in v]))))
             tb[tag+'_exploits'] = exploits
-        # # # # # # # #
         return None
     
 
@@ -388,8 +424,6 @@ Functionality can be divided in 5 steps:
 
 
     def get_accurate_version(self, accuracy, version, use_epoch):
-        #print('[ ] Getting "%s" version of "%s": ' % (accuracy, version), end='')
-        #if accuracy != 'full' and accuracy != 'none':
         # deal with epoch
         if use_epoch:
             version = version.replace(':', '.')
@@ -400,7 +434,6 @@ Functionality can be divided in 5 steps:
         if accuracy == 'none':
             return ''
         if accuracy in ['major', 'minor', 'build']:
-    
             majorparts = version.partition('.')
             if accuracy in ['major', 'minor', 'build'] and majorparts[0].isdigit():
                 version = majorparts[0].partition('-')[0]
@@ -410,8 +443,8 @@ Functionality can be divided in 5 steps:
             buildparts = minorparts[2].partition('.')
             if accuracy == 'build' and buildparts[0] != '': 
                 version = '.'.join([majorparts[0], minorparts[0], buildparts[0].partition('-')[0]])
-        #print(version)
         return version
 
 
 lib.module_objects.append(Module())
+

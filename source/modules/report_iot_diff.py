@@ -1,8 +1,12 @@
 #!usr/bin/env python3
+"""
+Generates comparison PDF report of two analysis.iot results.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -23,10 +27,9 @@ class Module(GenericModule):
             'report',
             'diff',
         ]
-        self.description = """This module uses reportlab library to generate report of gathered data. Report will be generated on local system. Data about cves are merged for all detected filesystems."""
+        self.description = """This module uses reportlab library to generate report of gathered data. Report will be generated on local system. Data about CVEs are merged for all detected filesystems."""
         
         self.dependencies = {
-            'analysis.iot': '1.1',
         }
         self.changelog = """
 """
@@ -52,7 +55,6 @@ class Module(GenericModule):
         desired = self.parameters['DESIRED'].value.split(' ')
         tag1 = self.parameters['TAG1'].value
         tag2 = self.parameters['TAG2'].value
-
 
         # desired correct?
         for d in desired:
@@ -130,7 +132,7 @@ class Module(GenericModule):
         
             # for each fs
             fscount = -1
-            for fs in (tb[tag+'_filesystems'] if tag+'_filesystems' in tb else []):
+            for fs in tb[tag+'_filesystems'] if tag+'_filesystems' in tb else []:
                 fscount += 1
                 #entries.append(Paragraph('<para spaceBefore=20>%s<para>' % (fs['name']), heading1style))
                 entries.append(Paragraph('<para spaceBefore=20>File System #%d<para>' % (fscount), heading1style))
@@ -162,56 +164,53 @@ class Module(GenericModule):
                         data.append(l)
                     if len(data)>0:
                         entries.append(Paragraph('<para>Cron entries:<para>', headingstyle))
-                        #t=Table(data, (2*cm, 0.5*cm, 0.5*cm, 0.5*cm, 0.5*cm, 2*cm, 12*cm), [0.5*cm]*len(data), hAlign='LEFT')
                         t=Table(data, (None, None, None, None, None, None, 11*cm), None, hAlign='LEFT')
-                        #t=Table(data, (None, None, None, None, None, None, 13*cm), None, hAlign='LEFT')
                         t.setStyle(TableStyle([('SPAN', (0, x), (4, x)) for x in tospan]+
-                        [('%sPADDING' % x, (0, 0), (-1, -1), 0) for x in ['TOP', 'BOTTOM']]+
-                        [('%sPADDING' % x, (0, 0), (-1, -1), 2) for x in ['LEFT', 'RIGHT']]+
-                        [
-                            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                            #('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                            #('LEFTPADDING', (0, 0), (-1, -1), 0),
-                            #('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                        ]
-                        ))
+                                              [('%sPADDING' % x, (0, 0), (-1, -1), 0) for x in ['TOP', 'BOTTOM']]+
+                                              [('%sPADDING' % x, (0, 0), (-1, -1), 2) for x in ['LEFT', 'RIGHT']]+
+                                              [
+                                                  ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                                  #('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                                              ]
+                                             ))
                         entries.append(t)
     
 
-            # ADD VULNERABLE LIST
-            entries.append(Paragraph('<para spaceBefore=30>Vulnerable packages</para>', headingstyle))
-            data = [['Package', 'Version', 'Vulnerabilities', '', ''], ['', '', Paragraph('<para textColor=red align=center><b>HIGH</b></para>', textstyle), Paragraph('<para textColor=orange align=center><b>MEDIUM</b></para>', textstyle), Paragraph('<para textColor=yellowgreen align=center><b>LOW</b></para>', textstyle)]]
-            vulnerable = {}
-            totals = [0, 0, 0]
-            if 'cves' in fs:
-                for x in fs['cves']:
-                    key = (x[1], x[14])
-                    if key not in vulnerable:
-                        vulnerable[key] = [0, 0, 0]
-                    vulnerable[key][(0 if x[5] == 'High' else (1 if x[5] == 'Medium' else 2))] += 1
-                notnull = lambda x: x if x > 0 else ''
-            for x in sorted(vulnerable.keys(), key=lambda x: x[0]):
-                name = self.get_name_with_origin(tag, x[0])
-                data.append((name, self.limit(x[1], 20), notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
-                for i in range(0, 3):
-                    totals[i] += vulnerable[x][i]
-            data.append(['Total:', '', totals[0], totals[1], totals[2]])
-            data.append(['', '', sum(totals), '', ''])
-            
-            tvulnerable = Table(data, (6*cm, 4*cm, 2*cm, 2*cm, 2*cm), None, hAlign='LEFT')
-            tvulnerable.setStyle(TableStyle([
-                ('SPAN', (0, 0), (0, 1)), # product
-                ('SPAN', (1, 0), (1, 1)), # version
-                ('SPAN', (-3, 0), (-1, 0)), # vulnerabilities
-                ('SPAN', (0, -2), (1, -1)), # total
-                ('SPAN', (-3, -1), (-1, -1)), # grand total
-                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ]))
+                # ADD CVE SUMMARY
+                entries.append(Paragraph('<para spaceBefore=30>Vulnerable packages</para>', headingstyle))
+                data = [['Package', 'Version', 'Vulnerabilities', '', ''], ['', '', Paragraph('<para textColor=red align=center><b>HIGH</b></para>', textstyle), Paragraph('<para textColor=orange align=center><b>MEDIUM</b></para>', textstyle), Paragraph('<para textColor=yellowgreen align=center><b>LOW</b></para>', textstyle)]]
+                vulnerable = {}
+                totals = [0, 0, 0]
+                if 'cves' in fs:
+                    for x in fs['cves']:
+                        key = (x[1], x[14])
+                        if key not in vulnerable:
+                            vulnerable[key] = [0, 0, 0]
+                        vulnerable[key][(0 if x[5] == 'High' else (1 if x[5] == 'Medium' else 2))] += 1
+                    notnull = lambda x: x if x > 0 else ''
+                for x in sorted(vulnerable.keys(), key=lambda x: x[0]):
+                    name = self.get_name_with_origin(tag, x[0])
+                    data.append((name, self.limit(x[1], 20), notnull(vulnerable[x][0]), notnull(vulnerable[x][1]), notnull(vulnerable[x][2])))
+                    for i in range(0, 3):
+                        totals[i] += vulnerable[x][i]
+                data.append(['Total:', '', totals[0], totals[1], totals[2]])
+                data.append(['', '', sum(totals), '', ''])
+                
+                tvulnerable = Table(data, (6*cm, 4*cm, 2*cm, 2*cm, 2*cm), None, hAlign='LEFT')
+                tvulnerable.setStyle(TableStyle([
+                    ('SPAN', (0, 0), (0, 1)), # product
+                    ('SPAN', (1, 0), (1, 1)), # version
+                    ('SPAN', (-3, 0), (-1, 0)), # vulnerabilities
+                    ('SPAN', (0, -2), (1, -1)), # total
+                    ('SPAN', (-3, -1), (-1, -1)), # grand total
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ]))
 
-            entries.append(tvulnerable)
-          
+                entries.append(tvulnerable)
+
+        # GROUP CVEs BY PRESENCE
         for d in desired:
             cvedata = None
             title = ''
@@ -232,7 +231,7 @@ class Module(GenericModule):
             if cvedata is None:
                 continue
 
-            # ADD CVEs
+            # ADD SPECIFIC CVEs
             exploits = dict(list(tb[tag1+'_exploits'].items()) + list(tb[tag2+'_exploits'].items()))
             entries.append(Paragraph('<para spaceBefore=30>%s<para>' % (title), headingstyle))
             for c in sorted(cvedata, key=lambda x: x[4] not in exploits):
@@ -257,16 +256,13 @@ class Module(GenericModule):
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     #('BACKGROUND', (0, 0), (-1, 3), color),
                     ('BACKGROUND', (0, 0), (0, 3), color),
-                    #('LINEBEFORE', (-1, 0), (-1, -3), 1, color),
-                    #('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.black),
-                    #('LINEABOVE', (0, -2), (-1, -2), 1, colors.black),
                     ('SPAN', (0, -1), (-1, -1)), # exploits
                     ('SPAN', (0, -2), (-1, -2)), # description
                     ('SPAN', (1, 0), (1, 2)), # cve
                     ('SPAN', (2, 0), (2, -3)), # package
                     ('ALIGN', (3, 0), (3, 4), 'RIGHT'),
                     ('FONTSIZE', (0, 0), (-1, -1), 10),
-                     ('FONTSIZE', (1, 0), (1, 0), 15), # cve
+                    ('FONTSIZE', (1, 0), (1, 0), 15), # cve
                 ]))
                 entries.append(KeepTogether(t))
             entries.append(PageBreak()) # for every FS
@@ -292,3 +288,4 @@ class Module(GenericModule):
 
     
 lib.module_objects.append(Module())
+

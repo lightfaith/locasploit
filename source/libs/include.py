@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Useful functions are defined here.
+"""
 import os, sys, re, time, importlib, imp, subprocess,  signal, threading
 #import logging, traceback
 import source.libs.define as lib
@@ -35,9 +38,9 @@ def exit_program(signal, frame):
     lib.db['vuln'].clean()
     # disconnect from databases
     log.info('Disconnecting from databases...')
-    for dbname in lib.db.keys():
-        if lib.db[dbname]:
-            lib.db[dbname].close()
+    for db in lib.db.values():
+        if db:
+            db.close()
     log.info('%s out.' % lib.appname)
     sys.exit(0 if signal is None else 1)
 
@@ -105,6 +108,7 @@ def command_exists(activeroot, c):
         # get path to the command
         com = command('which %s' % (c))
         return len(com) > 0
+    # TODO more system types
     else:
         log.warn('Cannot determine \'%s\' existence.' % c)
         return False
@@ -114,14 +118,14 @@ def positive(string):
     """ Check if parameter represents positive state """
     if type(string) == str:
         string = string.lower()
-    return string.lower() in lib.POSITIVE_STRINGS
+    return string in lib.POSITIVE_STRINGS
 
 
 def negative(string):
     """ Check if parameter represents negative state """
     if type(string) == str:
         string = string.lower()
-    return string.lower() in lib.NEGATIVE_STRINGS
+    return string in lib.NEGATIVE_STRINGS
 
 
 def is_admin(user=lib.global_parameters['USER'], activeroot='/'):
@@ -154,22 +158,19 @@ def is_admin(user=lib.global_parameters['USER'], activeroot='/'):
 def get_address_from_active_root(activeroot):
     if activeroot.startswith('/'):
         return '127.0.0.1'
-    if activeroot[:6] in ['ssh://', 'ftp://']:
-        rest = activeroot[6:]
-        if '/' in rest:
-            rest = rest[:rest.index('/')]
-        return rest
-    # NOT IMPLEMENTED
+    #if activeroot[:6] in ['ssh://', 'ftp://']:
+    #    rest = activeroot[6:]
+    #    if '/' in rest:
+    #        rest = rest[:rest.index('/')]
+    #    return rest
+    # TODO NOT IMPLEMENTED
     return None
+
 """    
 # now in source.libs.io
 def get_system_type_from_active_root(activeroot):
-    if activeroot == '/':
-        return sys.platform
-    # for remote systems check database, else return 'unknown' (appropriate module must get the answer then)
-    # NOT IMPLEMENTED
-    return 'unknown'
 """
+
 def get_local_uuid():
     if sys.platform.startswith('lin'):
         partition = command("cat /etc/mtab | grep ' / ' | cut -d' ' -f1").splitlines()[0].decode('utf-8')
@@ -184,3 +185,4 @@ def get_local_uuid():
         return uuid[uuid.index('{')+1:uuid.index('}')]
     else:
         return 'unknown'
+

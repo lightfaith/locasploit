@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+"""
+This module serves as basic template.
+"""
+
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='', email='', web=''),
         ]
@@ -25,7 +30,7 @@ Need help with this madness? Check the "basic_commented" module.
         
         
         self.dependencies = {
-            #'linux.enumeration.distribution': '1.0',
+            #'module': 'version',
         }
         self.changelog = """
 """
@@ -54,7 +59,8 @@ Need help with this madness? Check the "basic_commented" module.
         silent = positive(self.parameters['SILENT'].value)
         # # # # # # # #
         # Define your code here
-        log.ok('Template module says: "Hello World!"')
+        if not silent:
+            log.ok('Template module says: "Hello World!"')
         return None 
     
 

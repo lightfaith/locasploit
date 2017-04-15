@@ -1,4 +1,7 @@
 #!usr/bin/env python3
+"""
+This file processes user commands and defines various pretty printing functions.
+"""
 from source.libs.include import *
 from source.libs.include import command as cmd
 from source.libs.define import *
@@ -23,10 +26,9 @@ def execute_command(command):
                 newcommand.append(global_parameters[part[1:]])
             else:
                 log.err('Key \'%s\' is not present in Temporary Base or Global Parameters.' % (part[1:]))
-                pass
         else:
             # escaped $?
-            if part.startswith('\$'):
+            if part.startswith(r'\$'):
                 part = part[1:]
             newcommand.append(part)
     command = ' '.join(newcommand)
@@ -42,8 +44,14 @@ def execute_command(command):
     
     # test playground
     elif command == 'test':
-        import source.libs.io as io
-        io.mkdir('/', './vulnerabilities')
+        a = sorted(lib.tb['test_filesystems'][0]['packages'], key = lambda x: x[0])
+        b = sorted(lib.tb['sshtest_filesystems'][0]['packages'], key = lambda x: x[0])
+        for i in range(len(a)):
+            if a[i][0] != b[i][0] or a[i][2] != b[i][2]:
+                print('Difference:')
+                print(a[i])
+                print(b[i])
+                print()
 
         print('-' * 20)
     
@@ -67,7 +75,7 @@ def execute_command(command):
     
     # module search
     elif command[:7] == 'search ':
-        if len(command[7:].split(' ')) == 1 and not re.search('[!|&\(\)]', command[7:]):
+        if len(command[7:].split(' ')) == 1 and not re.search(r'[!|&\(\)]', command[7:]):
             # simple search, group by categories
             if command[7] in ['>', '<', '='] and len(command[8:]) == 4 and command[8:].isdigit(): # date
                 year = int(command[8:])
@@ -156,11 +164,11 @@ def execute_command(command):
 
     # show options
     elif command == 'show options' or command == 'show parameters':
-        print_module_info(basics=False, authors=False, description=False, references=False, tags=False, db=False, dependencies=False, dependent=False, changelog=False)
+        print_module_info(basics=False, authors=False, description=False, references=False, tags=False, dependencies=False, dependent=False, changelog=False)
     
     # show only undefined options
     elif command == 'show missing':
-        print_module_info(basics=False, authors=False, description=False, references=False, tags=False, db=False, dependencies=False, dependent=False, changelog=False, missing=True)
+        print_module_info(basics=False, authors=False, description=False, references=False, tags=False, dependencies=False, dependent=False, changelog=False, missing=True)
 
     # show global options
     elif command == 'getg':
@@ -237,9 +245,9 @@ def execute_command(command):
             log.warn('Choose a module first.')
         # are all parameters in place?
         elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
-                log.warn('Some parameters are undefined:')
-                for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
-                    log.warn('    %s' % x)
+            log.warn('Some parameters are undefined:')
+            for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
+                log.warn('    %s' % x)
         else:
             # check and measure time
             start = time.time()
@@ -264,9 +272,9 @@ def execute_command(command):
             log.warn('Choose a module first.')
         # are all parameters in place?
         elif len([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value==''])>0:
-                log.warn('Some parameters are undefined:')
-                for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
-                    log.warn('    %s' % x)
+            log.warn('Some parameters are undefined:')
+            for x in sorted([p for p in m.parameters if m.parameters[p].mandatory and m.parameters[p].value=='']):
+                log.warn('    %s' % x)
         else:
             if m.check() != CHECK_FAILURE:
                 # run the module
@@ -296,10 +304,6 @@ def execute_command(command):
                     waitfor = command[len('waitfor '):].split(' ') if command.startswith('waitfor ') else None
                     timeout = lib.active_module.parameters['TIMEOUT'].value if 'TIMEOUT' in lib.active_module.parameters else None
                     lib.scheduler.add(m.name, start, job, timeout, waitfor)
-                    #if 'TIMEOUT' in lib.active_module.parameters:
-                    #    lib.scheduler.add(m.name, start, job, lib.active_module.parameters['TIMEOUT'].value, )
-                    #else:
-                    #    lib.scheduler.add(m.name, start, job)
             else: # check failed, which could be no problem for waitfor
                 if command.startswith('waitfor '):
                     log.warn('Check for module %s failed, but there are modules it waits for...' % (m.name))
@@ -320,7 +324,7 @@ def execute_command(command):
     # print temporary base
     elif command == 'tb':
         maxlen = 80
-        maxk = max([len(k) for k in lib.tb.keys()] + [3])
+        maxk = max([len(i) for i in lib.tb.items()] + [3])
         # print header
         print()
         log.attachline("%-*s  %-s" % (maxk, 'KEY', 'VALUE'))
@@ -398,14 +402,15 @@ def execute_command(command):
 
     elif command.startswith('connections kill '):
         newconnections = []
+        c = None
         for c in lib.connections:
             if c.description == command[17:]:
                 for con in c.connectors[::-1]:
                     con.close() #TODO for SSH, but also for others?
             else:
                 newconnections.append(c)
-        if len(newconnections) != len(lib.connections):
-            log.info('Connections \'%s\' killed' % (c.description))
+        if len(newconnections) != len(lib.connections) and c is not None:
+            log.info('Connection \'%s\' killed.' % (c.description))
         lib.connections = newconnections
 
     # sessions
@@ -468,8 +473,8 @@ def execute_command(command):
     elif command in ['dict', 'dicts', 'dictionary', 'dictionaries']:
         
         log.info('Wait for it...')
-        dicts = db['dict'].get_summary()
-        print(dicts)
+        dicts_summary = db['dict'].get_summary()
+        print(dicts_summary)
         """if len(dicts) > 0:
             # compute column width
             maxd = max([len(x) for x in dicts] + [10])
@@ -586,9 +591,9 @@ def print_modules(modules, order_by_date=False):
 
 
 
-def print_module_info(basics=True, authors=True, options=True, missing=False, description=True, references=True, tags=True, db=True, dependencies=True, dependent=True, changelog=True):
+def print_module_info(basics=True, authors=True, options=True, missing=False, description=True, references=True, tags=True, dependencies=True, dependent=True, changelog=True):
     m = lib.active_module
-    if m == None:
+    if m is None:
         log.warn('Choose a module first.')
         return
 
@@ -654,11 +659,11 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
         
     # modules the active module depends on
     if dependencies and len(m.dependencies) > 0:
-        log.attachline('Dependencies:', log.Color.PURPLE)
+        log.attachline('Prerequisites:', log.Color.PURPLE)
         maxd = max([6] + [len(d) for d in m.dependencies])
         log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
         log.writeline('%s  %s' % ('-' * maxd, '-' * 7), log.Color.PURPLE)
-        for d in m.dependencies:
+        for d in sorted(m.dependencies):
             log.writeline('%-*s  %s  ' % (maxd, d, m.dependencies[d]))
         log.writeline()
 
@@ -666,11 +671,11 @@ def print_module_info(basics=True, authors=True, options=True, missing=False, de
     if dependent:
         dep = [x for x in lib.modules if len([y for y in lib.modules[x].dependencies if y == m.name and lib.modules[x].dependencies[y] == m.version]) > 0]
         if len(dep) > 0:
-            log.attachline('Dependent modules:', log.Color.PURPLE)
+            log.attachline('Dependents:', log.Color.PURPLE)
             maxd = max([6] + [len(d) for d in dep])
             log.writeline('%-*s  %s' % (maxd, 'MODULE', 'VERSION'))
             log.writeline('%s  %s' % ('-' * maxd, '-' * 7), log.Color.PURPLE)
-            for d in dep:
+            for d in sorted(dep):
                 log.writeline('%-*s  %s  ' % (maxd, d, lib.modules[d].version))
             log.writeline()
 

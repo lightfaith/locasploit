@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Class definition for connection to another system.
+"""
 from source.libs.include import *
 
 class Connection:

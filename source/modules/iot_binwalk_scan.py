@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+This module uses binwalk to analyze structure of a binary file.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
@@ -36,34 +39,29 @@ Performs a binwalk on a file.
         self.parameters = {
             'ACTIVEROOT': Parameter(mandatory=True, description='System to work with'),
             'SILENT': Parameter(value='no', mandatory=True, description='Suppress the output'),
-            #'BACKGROUND' : Parameter(value='yes', mandatory=True, description='yes = run in background, no = wait for it...'),
             'BINFILE': Parameter(mandatory=True, description='File to analyze'),
         }
 
     def check(self, silent=None):
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
+        result = CHECK_SUCCESS
         # binwalk available?
         try:
             import binwalk
         except:
             if not silent:
                 log.err('Binwalk is not available.')
-            return CHECK_FAILURE
-        return CHECK_SUCCESS
+            result = CHECK_FAILURE
+        return result
     
     def run(self):
-        # check parameteres
         silent = positive(self.parameters['SILENT'].value)
         import binwalk
-        #if not positive(self.parameters['BACKGROUND'].value) and not negative(self.parameters['BACKGROUND'].value):
-        #    log.err('Bad %s value: %s.', 'BACKGROUND', self.parameters['BACKGROUND'].value)
-        #    return None
         try:
             # Perform a signature scan against the files specified on the command line and suppress the usual binwalk output.
             path = io.get_fullpath(self.parameters['ACTIVEROOT'].value, self.parameters['BINFILE'].value)
             for module in binwalk.scan(path, signature=True, quiet=True):
-                #log.writeline('%s Results:' % module.name)
                 if not silent:
                     for result in module.results:
                         log.writeline('0x%.8X    %s [%s]' % (result.offset, result.description, str(result.valid)))

@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+"""
+This module determines planned actions.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -43,15 +47,21 @@ class Module(GenericModule):
         if silent is None:
             silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
-        result = CHECK_SUCCESS
-        
+        result = CHECK_PROBABLY
+        # linux system?
+        if not get_system_type_from_active_root(activeroot).startswith('lin'):
+            if not silent:
+                log.warn('Target system does not belong to Linux family.')
+            result = CHECK_UNLIKELY
         return result
 
     def run(self):
         silent = positive(self.parameters['SILENT'].value)
         activeroot = self.parameters['ACTIVEROOT'].value
         lines = []
+        
         # TODO add support for specific anacrontab syntax
+        
         # solve files in /etc
         for etcfile in ['/etc/crontab'] + [os.path.join('/etc/cron.d/', x) for x in io.list_dir(activeroot, '/etc/cron.d/')]:
             if not io.can_read(activeroot, etcfile):
@@ -59,10 +69,7 @@ class Module(GenericModule):
             tmp = io.read_file(activeroot, etcfile)
             if tmp != IO_ERROR:
                 lines += tmp.splitlines()
-#                if type(lines) in (list, tuple):
-#                    lines += tmp.splitlines()
-#                else:
-#                    lines.append(tmp.splitlines())
+        
         # solve user crons
         for user in io.list_dir(activeroot, '/var/spool/cron/crontabs'):
             path = os.path.join('/var/spool/cron/crontabs/', user)
@@ -83,8 +90,7 @@ class Module(GenericModule):
                 folder = line.partition('run-parts --report ')[2].split(' ')[0]
                 for f in io.list_dir(activeroot, folder):
                     lines.append('%s %s' % (how, f))
-        #    else:
-        #        print(line)
+        # push to database
         todb = []
         for line in lines:
             words = re.split('[ \t]+', line)

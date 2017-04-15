@@ -1,8 +1,12 @@
 #!usr/bin/env python3
+"""
+Generates PDF report of analysis.iot result.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
@@ -25,7 +29,6 @@ class Module(GenericModule):
         self.description = """This module uses reportlab library to generate report of gathered data. Report will be generated on local system."""
         
         self.dependencies = {
-            'analysis.iot': '1.1',
         }
         self.changelog = """
 """
@@ -68,7 +71,7 @@ class Module(GenericModule):
         tag = self.parameters['TAG'].value
         silent = positive(self.parameters['SILENT'].value)
 
-        from reportlab.pdfgen import canvas
+        #from reportlab.pdfgen import canvas
         from reportlab.lib import colors
         from reportlab.lib.units import cm
         from reportlab.lib.pagesizes import A4
@@ -86,17 +89,18 @@ class Module(GenericModule):
         headingstyle = styles['Heading2']
         textstyle = styles['BodyText']
 
+        # HEADING
         entries.append(Paragraph('<para align=center spaceAfter=20>VULNERABILITY ANALYSIS REPORT</para>', titlestyle))
         
 
         cves_lists = [x.get('cves') for x in tb[tag+'_filesystems']] if tag+'_filesystems' in tb else []
         exploits = {} if tag+'_exploits' not in tb else tb[tag+'_exploits']
         exploit_count = len(set([x for k,v in exploits.items() for x in v]))
+
+        # ADD GENERAL INFO
         if tag+'_general' in tb:
-            # ADD GENERAL INFO
             #entries.append(Paragraph('<para spaceBefore=30>General info<para>', headingstyle))
             data = [[x[0]+':', ', '.join(x[1]) if type(x[1]) in [list, tuple, set] else x[1]] for x in tb[tag+'_general']]
-            #if tag+'_cves' tb:
             if len(cves_lists) > 0:
                 data.append(['Vulnerable:', Paragraph('<para><font color=%s><b>%s</b></font> (<i>%s</i> accuracy)</para>' % (('red', 'YES', tb[tag+'_accuracy']) if max([0]+[len(x) for x in cves_lists]) else ('green', 'NO', tb[tag+'_accuracy'])), textstyle)])
                 data.append(['Known exploits:', Paragraph('<para><font color=%s><b>%s</b></font></para>' % (('red', exploit_count) if exploit_count>0 else ('green', exploit_count)), textstyle)])
@@ -104,9 +108,8 @@ class Module(GenericModule):
         
         # for each fs
         fscount = -1
-        for fs in (tb[tag+'_filesystems'] if tag+'_filesystems' in tb else []):
+        for fs in tb[tag+'_filesystems'] if tag+'_filesystems' in tb else []:
             fscount += 1
-            #entries.append(Paragraph('<para spaceBefore=20>%s<para>' % (fs['name']), heading1style))
             entries.append(Paragraph('<para spaceBefore=20>File System #%d<para>' % (fscount), heading1style))
             data = [['Root:', fs['name']]]
             entries.append(Table(data, None, None, hAlign='LEFT'))
@@ -136,23 +139,19 @@ class Module(GenericModule):
                     data.append(l)
                 if len(data)>0:
                     entries.append(Paragraph('<para>Cron entries:<para>', headingstyle))
-                    #t=Table(data, (2*cm, 0.5*cm, 0.5*cm, 0.5*cm, 0.5*cm, 2*cm, 12*cm), [0.5*cm]*len(data), hAlign='LEFT')
                     t=Table(data, (None, None, None, None, None, None, 11*cm), None, hAlign='LEFT')
-                    #t=Table(data, (None, None, None, None, None, None, 13*cm), None, hAlign='LEFT')
                     t.setStyle(TableStyle([('SPAN', (0, x), (4, x)) for x in tospan]+
-                    [('%sPADDING' % x, (0, 0), (-1, -1), 0) for x in ['TOP', 'BOTTOM']]+
-                    [('%sPADDING' % x, (0, 0), (-1, -1), 2) for x in ['LEFT', 'RIGHT']]+
-                    [
-                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                        #('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-                        #('LEFTPADDING', (0, 0), (-1, -1), 0),
-                        #('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                    ]
-                    ))
+                                          [('%sPADDING' % x, (0, 0), (-1, -1), 0) for x in ['TOP', 'BOTTOM']]+
+                                          [('%sPADDING' % x, (0, 0), (-1, -1), 2) for x in ['LEFT', 'RIGHT']]+
+                                          [
+                                              ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                                              #('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                                          ]
+                                         ))
                     entries.append(t)
 
 
-            # ADD VULNERABLE LIST
+            # ADD CVE SUMMARY
             entries.append(Paragraph('<para spaceBefore=30>Vulnerable packages</para>', headingstyle))
             data = [['Package', 'Version', 'Vulnerabilities', '', ''], ['', '', Paragraph('<para textColor=red align=center><b>HIGH</b></para>', textstyle), Paragraph('<para textColor=orange align=center><b>MEDIUM</b></para>', textstyle), Paragraph('<para textColor=yellowgreen align=center><b>LOW</b></para>', textstyle)]]
             vulnerable = {}
@@ -186,7 +185,7 @@ class Module(GenericModule):
 
             entries.append(tvulnerable)
             
-            # ADD CVEs
+            # ADD SPECIFIC CVEs
             if 'cves' in fs and len(fs['cves'])>0:
                 entries.append(Paragraph('<para spaceBefore=30>Detected vulnerabilities<para>', headingstyle))
                 # exploitable first
@@ -210,9 +209,6 @@ class Module(GenericModule):
                         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                         #('BACKGROUND', (0, 0), (-1, 3), color),
                         ('BACKGROUND', (0, 0), (0, 3), color),
-                        #('LINEBEFORE', (-1, 0), (-1, -3), 1, color),
-                        #('LINEABOVE', (0, 0), (-1, 0), 1.5, colors.black),
-                        #('LINEABOVE', (0, -2), (-1, -2), 1, colors.black),
                         ('SPAN', (0, -1), (-1, -1)), # exploit
                         ('SPAN', (0, -2), (-1, -2)), # description
                         ('SPAN', (1, 0), (1, 2)), # cve
@@ -227,7 +223,6 @@ class Module(GenericModule):
         if not silent:
             log.ok('Report generated.')
 
-        # # # # # # # #
         return None
     
     def get_name_with_origin(self,  name):
@@ -238,8 +233,6 @@ class Module(GenericModule):
             name += ' (alias)'
         return name
         
-    
-    
     
     def limit(self, string, maxlen):
         if len(string)>maxlen-3:

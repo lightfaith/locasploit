@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
+"""
+This module uses binwalk to extract given file.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='Vitezslav Grygar', email='vitezslav.grygar@gmail.com', web='https://badsulog.blogspot.com'),
         ]
         
         self.name = 'iot.binwalk.extract'
-        self.short_description = 'Extracts components of a .bin file.'
+        self.short_description = 'Extracts components of a binary file.'
         self.references = [
             '',
         ]
@@ -23,7 +27,7 @@ class Module(GenericModule):
             'firmware'
         ]
         self.description = """
-Extracts components of a .bin file.
+Extracts components of a .bin file using binwalk.
 """
         self.dependencies = {
         }
@@ -58,7 +62,7 @@ Extracts components of a .bin file.
                 log.err('Binwalk is not available.')
             result = CHECK_FAILURE
         # binfile exists?
-        if not io.can_read(activeroot, binfile):
+        if not (io.can_read(activeroot, binfile) and io.get_file_info(activeroot, binfile)['type'] == 'f'):
             if not silent:
                 log.err('Cannot access bin file \'%s\'.' % (binfile))
                 result = CHECK_FAILURE
@@ -100,7 +104,8 @@ Extracts components of a .bin file.
         try:
             path = io.get_fullpath(self.parameters['ACTIVEROOT'].value, self.parameters['BINFILE'].value)
             for module in binwalk.scan(path, **{'signature' : True, 'quiet' : True, 
-                'extract' : True, 'directory' : self.parameters['TMPDIR'].value, 'matryoshka' : True, 'rm': clean}):
+                                                'extract' : True, 'directory' : self.parameters['TMPDIR'].value, 
+                                                'matryoshka' : True, 'rm': clean}):
                 pass
         except binwalk.ModuleException as e:
             log.err(str(e))

@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+"""
+SQL queries for core databases are here.
+"""
 #from source.libs.include import *
 #from source.libs.define import *
 import time, re
@@ -80,8 +84,8 @@ class DBDictionary(DB):
                 self.execute("INSERT INTO Dictionary (name, checksum) VALUES(:n, :c)", {'n' : name, 'c' : checksum})
         return True
     
-    def add_words(self, words, dict, checksum=None):
-        d = self.add_dictionary(dict, checksum)
+    def add_words(self, words, dictionary, checksum=None):
+        d = self.add_dictionary(dictionary, checksum)
         if d == DB_ERROR:
             return DB_ERROR
         # add new words
@@ -96,8 +100,8 @@ class DBDictionary(DB):
         self.execute("BEGIN", commit=False)
         for word in words:
             idw = self.execute(
-            "INSERT OR IGNORE INTO DWord(fk_dictionary, fk_word) SELECT d.dictionaryid, w.wordid from Dictionary d, Word w WHERE d.name = :d AND w.word = :w",
-             {'d' : dict, 'w' : word}, commit=True if word == words[-1] else False)
+                "INSERT OR IGNORE INTO DWord(fk_dictionary, fk_word) SELECT d.dictionaryid, w.wordid from Dictionary d, Word w WHERE d.name = :d AND w.word = :w",
+                {'d' : dict, 'w' : word}, commit=True if word == words[-1] else False)
             if idw == DB_ERROR:
                 return DB_ERROR
         self.commit() 
@@ -117,11 +121,11 @@ class DBDictionary(DB):
             return DB_ERROR
         return [t[0] for t in select]
     
-    def get_dictionary(self, dict):
+    def get_dictionary(self, dictionary):
         select =  self.execute("SELECT word from Word WHERE wordid IN ( \
                                     SELECT fk_word FROM DWord WHERE fk_dictionary = ( \
                                         SELECT dictionaryid from Dictionary WHERE name = :d)) \
-                                ORDER BY word", {'d' : dict})
+                                ORDER BY word", {'d' : dictionary})
         if select == DB_ERROR:
             return DB_ERROR
         return [t[0] for t in select]
@@ -132,9 +136,10 @@ class DBDictionary(DB):
             return DB_ERROR
         return [t[0] for t in select]
     
-    def delete_dictionary(self, dict):
-        self.execute("DELETE FROM DWord WHERE fk_dictionary IN (SELECT dictionaryid FROM Dictionary WHERE name = :d)", {'d': dict})
-        self.execute("DELETE FROM Dictionary WHERE name = :d", {'d': dict})
+    def delete_dictionary(self, dictionary):
+        self.execute("DELETE FROM DWord WHERE fk_dictionary IN (SELECT" \
+            "dictionaryid FROM Dictionary WHERE name = :d)", {'d': dictionary})
+        self.execute("DELETE FROM Dictionary WHERE name = :d", {'d': dictionary})
         self.clean()
    
     def delete_dictionaries(self):
@@ -162,13 +167,13 @@ class DBDictionary(DB):
             return DB_ERROR
         return [t[0] for t in select]
     
-    def get_match_percent(self, dict, tags):
+    def get_match_percent(self, dictionary, tags):
         result = self.execute("SELECT t1.tag, COUNT(t1.word), (SELECT COUNT(t2.word) FROM Temporary t2 WHERE t2.tag = t1.tag) \
                     FROM Temporary t1 WHERE t1.word IN (SELECT w.word FROM Word w JOIN DWord dw ON w.wordid = dw.fk_word \
-                    WHERE dw.fk_dictionary IN (SELECT dictionaryid FROM Dictionary WHERE name = :d)) GROUP BY tag", {'d': dict})
+                    WHERE dw.fk_dictionary IN (SELECT dictionaryid FROM Dictionary WHERE name = :d)) GROUP BY tag", {'d': dictionary})
         if result == DB_ERROR:
             return DB_ERROR
-        return [(t[0], dict, t[1]/t[2]) for t in result]
+        return [(t[0], dictionary, t[1]/t[2]) for t in result]
         
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -199,7 +204,7 @@ class DBVuln(DB):
         result = []
         for part in version.split('.'):
             try:
-                digit = re.search('\d+', part).group()
+                digit = re.search(r'\d+', part).group()
                 if digit.isdigit():
                     result.append('%08d%s' % (int(digit), part[len(digit):]))
                 else:
@@ -207,8 +212,6 @@ class DBVuln(DB):
             except:
                 result.append(part)
         return '.'.join(result)
-        #sortable = '.'.join(['%8s%s' % (x.partition('-')[0], ''.join(x.partition('-')[1:])) for x in version.split('.')])
-        #sortable = version
         
 
     def add_apps_for_cves(self, actuples):
@@ -217,19 +220,15 @@ class DBVuln(DB):
         self.execute("BEGIN", commit=False)
         for cve, product, vendor, version, prev in actuples:
             sortable = self.get_sortable_version(version)
-            #print('version' + version + ' => sortable '  + sortable)
             cveids = self.execute("SELECT cveid FROM CVE WHERE name=:c", {'c': cve}, commit=False)
             if len(cveids) == 0:
                 continue
             self.execute("INSERT OR IGNORE INTO Vendor(name) VALUES(:v)", {'v': vendor}, commit=False, ignoreerrors=True)
             vendorid = int(self.execute("SELECT vendorid FROM vendor WHERE name=:v", {'v': vendor}, commit=False)[0][0])
-            #print('pushing products')
             self.execute("INSERT OR IGNORE INTO Product(vendorid, name) VALUES(:vid, :p)", {'vid': vendorid, 'p': product}, commit=False, ignoreerrors=True)
             productid = int(self.execute("SELECT productid FROM product WHERE vendorid=:vid AND name=:p", {'vid': vendorid, 'p': product}, commit=False)[0][0])
-            #print('pushing versions')
             self.execute("INSERT OR IGNORE INTO Version(productid, value, sortable, prev) VALUES(:pid, :v, :s, :p)", {'pid': productid, 'v': version, 's': sortable, 'p': prev}, commit=False, ignoreerrors=True)
             versionid = int(self.execute("SELECT versionid FROM Version WHERE productid=:pid AND value=:v", {'pid': productid, 'v': version}, commit=False)[0][0])
-            #print('pushing relations')
             self.execute('INSERT OR IGNORE INTO CV(cveid, versionid) VALUES(:cid, :vid)', {'cid': cveids[0][0], 'vid': versionid}, commit=False, ignoreerrors=True)
             
         self.commit()
@@ -237,6 +236,7 @@ class DBVuln(DB):
 
     
     def delete_cves_apps(self):
+        from datetime import datetime
         self.execute("BEGIN", commit=False)
         self.execute("DELETE FROM CV", commit=False)
         self.execute("DELETE FROM Version", commit=False)
@@ -264,7 +264,7 @@ class DBVuln(DB):
         self.execute("BEGIN", commit=False)
         for tag, name, vendor, version in data:
             sortable = self.get_sortable_version(version)
-            result = self.execute("INSERT OR IGNORE INTO Temporary(tag, name, vendor, version, sortable) VALUES(:t, :n, :vn, :vr, :s)", {'t': tag, 'n': name, 'vn':vendor, 'vr':version, 's': sortable}, commit=False);
+            result = self.execute("INSERT OR IGNORE INTO Temporary(tag, name, vendor, version, sortable) VALUES(:t, :n, :vn, :vr, :s)", {'t': tag, 'n': name, 'vn':vendor, 'vr':version, 's': sortable}, commit=False)
         self.commit()
         if result == DB_ERROR:
             return DB_ERROR
@@ -371,16 +371,16 @@ class DBAnalysis(DB):
         return True
     
     # NOTE
-    def add_note(self, text, type, unique=False):
+    def add_note(self, text, typ, unique=False):
         if self.create_session(lib.active_session) == DB_ERROR:
             return DB_ERROR
         if unique:
-            select = self.execute("SELECT * FROM Note WHERE fk_sessionid = :sid AND type = :type AND text=:t", {'sid': lib.active_session, 'type': type, 't': text})
+            select = self.execute("SELECT * FROM Note WHERE fk_sessionid = :sid AND type = :type AND text=:t", {'sid': lib.active_session, 'type': typ, 't': text})
             if select ==  DB_ERROR:
                 return DB_ERROR
             if len(select) > 0:
                 return True # already there
-        result = self.execute("INSERT INTO Note(text, type, fk_sessionid, timestamp) VALUES(:text, :type, :sid, :ts)", {'text': text, 'type': type, 'sid': lib.active_session, 'ts': time.time()})
+        result = self.execute("INSERT INTO Note(text, type, fk_sessionid, timestamp) VALUES(:text, :type, :sid, :ts)", {'text': text, 'type': typ, 'sid': lib.active_session, 'ts': time.time()})
         if result == DB_ERROR:
             return DB_ERROR
         return True
@@ -421,24 +421,13 @@ class DBAnalysis(DB):
         return select[0][0]
         
     # FILE
-    def add_file(self, root, path, type, permissions, uid, gid, content, atime, mtime, ctime, md5=None, sha1=None):
+    def add_file(self, root, path, typ, permissions, uid, gid, content, atime, mtime, ctime, md5=None, sha1=None):
         if self.create_system(root) == DB_ERROR:
             return DB_ERROR
         systemid = self.get_systemid(root)
         if systemid == DB_ERROR:
             return DB_ERROR
-        """select = self.execute("SELECT * FROM File WHERE fk_systemid = :sid AND path=:p", {'sid': systemid, 'p': path})
-        if select ==  DB_ERROR:
-            return DB_ERROR
-        if len(select) == 0:
-            result = self.execute(
-            "INSERT INTO File(path, fk_systemid, type, permissions, uid, gid, content, atime, mtime, ctime, timestamp) VALUES(:p, :sid, :t, :perm, :u, :g, :c, :at, :mt, :ct, :ts)", 
-            {'p': path, 'sid': systemid, 't': type, 'perm': permissions, 'u': uid, 'g': gid, 'c': content, 'at': atime, 'mt': mtime, 'ct': ctime, 'ts': time.time()})
-        else:
-            result = self.execute(
-            "UPDATE File SET type = :t, permissions = :perm, uid = :u, gid = :g, content = :c, atime = :at, mtime = :mt, ctime = :ct, timestamp = :ts WHERE fk_systemid = :sid AND path=:p",
-           {'p': path, 'sid': systemid, 't': type, 'perm': permissions, 'u': uid, 'g': gid, 'c': content, 'at': atime, 'mt': mtime, 'ct': ctime, 'ts': time.time()})
-        """
+
         md5 = None
         sha1 = None
         if content is not None:
@@ -447,10 +436,9 @@ class DBAnalysis(DB):
                 md5 = hashlib.md5(content.encode('utf-8')).hexdigest()
             if sha1 is None:
                 sha1 = hashlib.sha1(content.encode('utf-8')).hexdigest()
-        #print(md5, sha1)
         result = self.execute(
             "INSERT OR REPLACE INTO File(path, fk_systemid, type, permissions, uid, gid, content, atime, mtime, ctime, timestamp, md5, sha1) VALUES(:p, :sid, :t, :perm, :u, :g, :c, :at, :mt, :ct, :ts, :m, :s)", 
-            {'p': path, 'sid': systemid, 't': type, 'perm': permissions, 'u': uid, 'g': gid, 'c': content, 'at': atime, 'mt': mtime, 'ct': ctime, 'ts': time.time(), 'm': md5, 's':sha1})
+            {'p': path, 'sid': systemid, 't': typ, 'perm': permissions, 'u': uid, 'g': gid, 'c': content, 'at': atime, 'mt': mtime, 'ct': ctime, 'ts': time.time(), 'm': md5, 's':sha1})
         if result == DB_ERROR:
             return DB_ERROR
         
@@ -458,27 +446,27 @@ class DBAnalysis(DB):
     
     # PROPERTY
     
-    def add_property(self, systemroot, type, value, uniquetype=False):
+    def add_property(self, systemroot, typ, value, uniquetype=False):
         if self.create_system(systemroot) == DB_ERROR:
             return DB_ERROR
         systemid = self.get_systemid(systemroot)
         if systemid == DB_ERROR:
             return DB_ERROR
         if uniquetype: 
-            select = self.execute("SELECT * FROM Property WHERE fk_systemid = :sid AND type = :t", {'sid': systemid, 't': type})
+            select = self.execute("SELECT * FROM Property WHERE fk_systemid = :sid AND type = :t", {'sid': systemid, 't': typ})
         else:
-            select = self.execute("SELECT * FROM Property WHERE fk_systemid = :sid AND type = :t and value = :v", {'sid': systemid, 't': type, 'v': value})
+            select = self.execute("SELECT * FROM Property WHERE fk_systemid = :sid AND type = :t and value = :v", {'sid': systemid, 't': typ, 'v': value})
         if select ==  DB_ERROR:
             return DB_ERROR
         if len(select) == 0:
-            result = self.execute("INSERT INTO Property(fk_systemid, type, value) VALUES (:sid, :t, :v)", {'sid': systemid, 't': type, 'v': value})
+            result = self.execute("INSERT INTO Property(fk_systemid, type, value) VALUES (:sid, :t, :v)", {'sid': systemid, 't': typ, 'v': value})
             if result == DB_ERROR:
                 return DB_ERROR
         return True
         
     
     # USER
-    def add_users(self, systemroot, users, type):
+    def add_users(self, systemroot, users, typ):
         if self.create_system(systemroot) == DB_ERROR:
             return DB_ERROR
         systemid = self.get_systemid(systemroot)
@@ -487,9 +475,9 @@ class DBAnalysis(DB):
 
         # what is the structure?
         targs = None
-        if type == lib.USERS_UNIX:
+        if typ == lib.USERS_UNIX:
             targs = [(systemid, u[0], u[2], u[5], u[6], 1 if u[2] == 0 else 0) for u in users]
-        elif type == lib.USERS_UNIXLIKE:
+        elif typ == lib.USERS_UNIXLIKE:
             targs = [(systemid, u[0], u[2], u[5], u[6], u[7]) for u in users]
         
         if targs is None:

@@ -1,12 +1,15 @@
-use connection.ssh
-set HOST localhost
+use connection.constr
+setg CONSTR ssh://root@localhost:22/
 set METHOD agent
+#use connection.ssh
+#set HOST 192.168.1.94
+#set METHOD agent
 run
 back
 use analysis.iot
 set METHOD ssh
-set TARGET ssh://root@localhost:22/
-set TMPDIR /tmp/
+set TARGET $CONSTR
+set TMPDIR /tmp/iotssh/
 set TAG sshtest
 set EPOCH no
 #set EPOCH yes

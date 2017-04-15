@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Job class definition is defined here.
+Scheduling mechanism is defined here.
+"""
 import threading, time
 import source.libs.define as lib
 import source.libs.log as log
@@ -139,8 +143,9 @@ class Scheduler(threading.Thread):
 
 
     def add_user_thread(self, thread):
-        with self.lock:
-            self.user_threads.append(thread)
+        self.lock.acquire()
+        self.user_threads.append(thread)
+        self.lock.release()
     
     
     
