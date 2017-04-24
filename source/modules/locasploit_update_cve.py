@@ -145,7 +145,7 @@ class Thread(threading.Thread):
                     years_to_update[year] = ''
                     continue
 
-                # marck for update if hash is different
+                # mark for update if hash is different
                 sha1 = io.sha1('/', localfile)
                 if sha1 != lib.db['vuln'] .get_property('%s_sha1' % (year)):
                     years_to_update[year] = sha1

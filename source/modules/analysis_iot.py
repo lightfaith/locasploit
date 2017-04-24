@@ -106,7 +106,7 @@ Functionality can be divided in 5 steps:
             'TMPDIR': Parameter(mandatory=False, description='Absolute path of extraction directory'),
             'ACCURACY': Parameter(value='build', mandatory=True, description='Version match accuracy (none, major, minor, build, full)'),
             'TAG': Parameter(mandatory=True, description='Package info tag'),
-            'EXTRACT': Parameter(value='yes', mandatory=True, description='Extraction will happen'),
+            'EXTRACT': Parameter(value='yes', mandatory=False, description='Extraction will happen'),
             'EPOCH': Parameter(value='no', mandatory=True, description='Version epoch will be taken into consideration'),
             'ALIASES': Parameter(value='yes', mandatory=True, description='Also analyze common aliases for packages'),
         }
@@ -120,6 +120,7 @@ Functionality can be divided in 5 steps:
         target = self.parameters['TARGET'].value
         activeroot = self.parameters['ACTIVEROOT'].value
         accuracy = self.parameters['ACCURACY'].value
+        extract = self.parameters['EXTRACT'].value
 
         # supported method?
         if method not in ['local', 'image', 'ssh']:
@@ -134,6 +135,10 @@ Functionality can be divided in 5 steps:
             ibe.parameters['BINFILE'].value = self.parameters['TARGET'].value
             ibe.parameters['TMPDIR'].value = self.parameters['TMPDIR'].value
             result = min(result, ibe.check())
+            if not (positive(extract) or negative(extract)):
+                if not silent:
+                    log.err('EXTRACT value is not valid.')
+                return CHECK_FAILURE
 
         elif method == 'ssh':
             # existing connection?

@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
+"""
+This file serves as template for modules meant to run in the background.
+"""
 from source.modules._generic_module import *
 
 class Module(GenericModule):
     def __init__(self):
+        super().__init__()
         self.authors = [
             Author(name='', email='', web=''),
         ]
-        
         self.name = ''
         self.short_description = ''
         self.references = [
             '',
-        ]
-        
+        ]     
         self.date = '2999-12-31'
         self.license = 'GNU GPLv2'
         self.version = '0.0'
@@ -21,12 +23,10 @@ class Module(GenericModule):
         ]
         self.description = """
 """
-        
         self.dependencies = {
         }
         self.changelog = """
 """
-
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -54,9 +54,7 @@ class Module(GenericModule):
         return result
     
     def run(self):
-
         silent = positive(self.parameters['SILENT'].value)
-        # # # # # # # #
         # Don't put functionality here, 
         # this will execute immediately even if module is executed as waitfor!
         t = T(silent, int(self.parameters['TIMEOUT'].value))
@@ -65,7 +63,6 @@ class Module(GenericModule):
         t.start()
         t.join()
         return None
-        # # # # # # # #
     
 class T(threading.Thread):
     def __init__(self, silent, timeout):
@@ -73,13 +70,9 @@ class T(threading.Thread):
         self.silent = silent
         self.timeout = timeout
         self.terminate = False
-    
+    def stop(self):
+        self.terminate = True    
     def run(self):
         # stop executing if self.terminate
         pass
-        
-    def stop(self):
-        self.terminate = True
-
 lib.module_objects.append(Module())
-

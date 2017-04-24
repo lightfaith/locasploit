@@ -88,14 +88,13 @@ class Thread(threading.Thread):
         from datetime import datetime
         if self.terminate:
             return
-        last = lib.db['vuln'].get_property('last_update')
-        if not self.silent:
-            log.info('Last update: %s' % ('never' if last == -1 else last))
-        
         # update CVEs
         m = lib.modules['locasploit.update.cve']
         m.parameters['BACKGROUND'].value = 'yes' if self.background else 'no' 
         last_update = lib.db['vuln'].get_property('last_update')
+        if not self.silent:
+            log.info('Last update: %s' % ('never' if last_update == -1 else last_update))
+        
         if last_update != DB_ERROR and (datetime.now() - datetime.strptime(last_update, '%Y-%m-%d')).days < 8:
             if not self.silent:
                 log.info('Entries have been updated less than 8 days ago, checking Modified feed only...')
