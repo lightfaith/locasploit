@@ -36,6 +36,7 @@ def exit_program(signal, frame):
     log.info('Cleaning databases...')
     lib.db['dict'].clean()
     lib.db['vuln'].clean()
+    lib.db['checksum'].clean()
     # disconnect from databases
     log.info('Disconnecting from databases...')
     for db in lib.db.values():

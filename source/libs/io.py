@@ -407,7 +407,7 @@ def get_system_type_from_active_root(activeroot, verbose=False, dontprint=''):
     if activeroot.startswith(('/', 'ssh://')): # sub or ssh
         # linux should have some folders in / ...
         success = 0
-        linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', 'lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
+        linux_folders = ['/bin', '/boot', '/dev', '/etc', '/home', '/lib', '/media', '/opt', '/proc', '/root', '/sbin', '/srv', '/sys', '/tmp', '/usr']
         for folder in linux_folders:
             if can_read(activeroot, folder):
                 success += 1

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""
+Classes and methods for smart searching are defined here.
+"""
 from source.libs.include import *
 import source.libs.log as log
 
@@ -57,12 +60,11 @@ def search(expression):
     depth = 0
     nodes = []
     operators = [] # determined by priority (mod 4 gives index in priority list)
-    expression = list(filter(None, [x.strip() for x in re.split('([! \(\)<>=]|&&|\|\|)', expression)]))
+    expression = list(filter(None, [x.strip() for x in re.split(r'([! \(\)<>=]|&&|\|\|)', expression)]))
     #print(expression)
     for x in expression:
         # first normalize operators (&&, &, and) ...
         if x.lower() in ['&&', 'and']:
-            print('double and...')
             x = '&'
         if x.lower() in ['||', 'or']:
             x = '|'
@@ -100,7 +102,7 @@ def search(expression):
                     log.err('Your query is broken (undefined behaviour).')
             # push operator priority
             if priority.index(x) % 4 == 0:
-                    depth += 1
+                depth += 1
             else:
                 operators.append(4 * depth + priority.index(x))
         else: # operand
