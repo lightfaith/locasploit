@@ -324,6 +324,21 @@ class DBChecksum(DB):
         # clear temporary table
         self.execute("DELETE FROM Temporary")
     
+    def add_checksum(self, name, version, _file, app_comment=None, md5=None, sha1=None, sha256=None):
+        if md5 is None:
+            md5 = ''
+        if sha1 is None:
+            sha1 = ''
+        if sha256 is None:
+            sha256 = ''
+        self.execute("BEGIN", commit=False)
+        self.execute("INSERT OR IGNORE INTO Application(name, version, comment) VALUES(:n, :v, :c)", {'n': name, 'v': version, 'c': app_comment}, commit=False, ignoreerrors=True)
+        appid = int(self.execute("SELECT id from Application WHERE name=:n AND version=:v AND comment=:c", {'n': name, 'v': version, 'c': app_comment})[0][0])
+        if appid == DB_ERROR:
+            return DB_ERROR
+        self.execute("INSERT OR IGNORE INTO Checksum(file, fk_appid, md5, sha1, sha256) VALUES(:f, :id, :m, :s1, :s2)", {'f': _file, 'id': appid, 'm': md5, 's1': sha1, 's2': sha256}, commit=False, ignoreerrors=True)
+        self.commit()
+
     def add_tmp_checksum(self, tag, md5=None, sha1=None, sha256=None):
         select = self.execute("SELECT * FROM Temporary WHERE tag = :t AND md5 = :m AND sha1=:s1 AND sha256=:s256", {'t': tag, 'm': md5, 's1': sha1, 's256': sha256})
         if select == DB_ERROR:
@@ -333,6 +348,17 @@ class DBChecksum(DB):
             if result == DB_ERROR:
                 return DB_ERROR
         return True
+
+    def get_apps_for_checksums(self, tag):
+        result = self.execute("SELECT A.name, A.version, A.comment, C.file, C.md5, C.sha1, C.sha256 FROM Application A INNER JOIN Checksum C ON A.id = C.fk_appid WHERE EXISTS(SELECT T.* from Temporary T WHERE T.tag = :t AND (T.md5=C.md5 OR T.sha1=C.sha1 OR T.sha256=C.sha256))", {'t': tag})
+        if result == DB_ERROR:
+            return []
+        return result
+    
+    def clean(self):
+        result = self.execute("DELETE FROM Temporary")
+        return result
+        
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -405,7 +431,11 @@ class DBAnalysis(DB):
                 platform = sys.platform
             if platform is not None:
                 log.ok("Detected OS platform for '%s': %s" % (root, platform))
-                result = self.add_property(root, 'platform', platform)
+                #result = self.add_property(root, 'platform', platform)
+                systemid = self.get_systemid(root)
+                if systemid == DB_ERROR:
+                    return DB_ERROR
+                result = self.add_data('platform', systemid, platform)
                 if result == DB_ERROR:
                     return DB_ERROR
         return True
@@ -446,7 +476,7 @@ class DBAnalysis(DB):
     
     # PROPERTY
     
-    def add_property(self, systemroot, typ, value, uniquetype=False):
+    """def add_property(self, systemroot, typ, value, uniquetype=False):
         if self.create_system(systemroot) == DB_ERROR:
             return DB_ERROR
         systemid = self.get_systemid(systemroot)
@@ -463,7 +493,7 @@ class DBAnalysis(DB):
             if result == DB_ERROR:
                 return DB_ERROR
         return True
-        
+    """    
     
     # USER
     def add_users(self, systemroot, users, typ):
