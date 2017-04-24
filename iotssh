@@ -5,19 +5,13 @@ set METHOD agent
 #set HOST 192.168.1.94
 #set METHOD agent
 run
-back
 use analysis.iot
 set METHOD ssh
 set TARGET $CONSTR
-set TMPDIR /tmp/iotssh/
-set TAG sshtest
-set EPOCH no
-#set EPOCH yes
+setg TAG ssh
+set EPOCH yes
 run
-back
 use report.iot
-set TAG sshtest
 set OUTPUTFILE /tmp/report.pdf
 run
 back
-

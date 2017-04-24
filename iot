@@ -1,21 +1,15 @@
 use analysis.iot
-set TMPDIR /media/root/Entertainment/locasploit_files/extracted
+set TMPDIR /tmp
 setg TARGET /media/root/Entertainment/locasploit_files/firmwares/openwrt/openwrt-7.06-x86-squashfs.image
-#set ALIASES no
-set EXTRACT no
 set EXTRACT yes
 set METHOD image
-set TAG test
+setg TAG iot
 set ACCURACY build
-#set EPOCH no
 set EPOCH yes
 run
-#back
 use report.iot
-set TAG test
 set OUTPUTFILE /tmp/report.pdf
 run
 back
 !ls -lh $TARGET
 !md5sum $TARGET
-
