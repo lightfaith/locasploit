@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, sys, argparse
+import os, sys, stat, argparse
 
 # chdir
 os.chdir(os.path.dirname(sys.argv[0]))
@@ -59,7 +59,7 @@ def main():
         
     # main loop
     while True:
-        # input from stdin
+        # input from stdin, piped or redirected
         log.prompt()
         if lib.python_version[0] == '2':
             func = raw_input

@@ -18,7 +18,10 @@ class DB(object):
         self.cursor = self.connection.cursor()
     
     def close(self):
-        self.commit()
+        try:
+            self.commit()
+        except:
+            pass
         self.connection.close()
     
     def execute(self, command, parameters=None, commit=True, ignoreerrors=False):

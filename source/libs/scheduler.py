@@ -92,14 +92,17 @@ class Scheduler(threading.Thread):
             if hasattr(u, 'stop'):
                 u.stop()
 
-        self.lock.release()
+        #self.lock.release()
         while len(self.jobs) > 0 and len(self.user_threads) > 0: # wait for everything to die
             time.sleep(0.5)
         self.terminate = True # sets DIE flag for itself
+        self.lock.release()
 
 
 
     def add(self, name, start, job, timeout=None, waitfor=None):
+        if self.terminate: # in terminating state, do not create anything new
+            return None
         # add a new job
         self.lock.acquire()
         jobid = self.newid() # get lowest unused id
