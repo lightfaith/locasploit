@@ -1,3 +1,3 @@
 # locasploit
 Local enumeration and exploitation framework.
-![icon](icon.png?raw=true)
+![icon](icon.png?raw=true&width=100)
